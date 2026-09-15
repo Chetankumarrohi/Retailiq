@@ -1,0 +1,38 @@
+RETAILIQ INTERNAL POLICY DOCUMENTATION
+(Synthetic, for project demonstration only)
+
+1. INVENTORY POLICY
+Target inventory cover is 3 weeks of forecasted demand for A-type stores, 4 weeks for
+B-type stores, and 5 weeks for C-type stores, reflecting differing replenishment lead
+times. Reorder is triggered automatically when projected cover falls below 1.5 weeks.
+Safety stock is set at 20% of the 8-week rolling average weekly sales for each
+store-department combination.
+
+2. MARKDOWN RULES
+Markdown activation follows a staged schedule: Stage 1 (10% off) begins if a
+store-department's weekly sales fall more than 25% below its 12-week rolling average
+for two consecutive weeks. Stage 2 (25% off) begins after four consecutive weeks below
+target. Stage 3 (40% clearance) applies to slow-moving stock older than 90 days.
+Markdown decisions must be reviewed weekly against the promotional calendar to avoid
+overlapping discounts with planned holiday promotions.
+
+3. SUPPLIER TERMS
+Standard supplier payment terms are net-30 from delivery confirmation. Suppliers
+contributing more than 15% of a category's volume are classified as strategic and
+receive a dedicated quarterly business review. Late deliveries beyond 5 business days
+trigger a formal service-level notice.
+
+4. RETURNS POLICY
+Customer returns are accepted within 30 days of purchase with a receipt, or 14 days
+without one, at store manager discretion. Returned inventory is inspected within 48
+hours: resellable stock is returned to shelf, damaged stock is written off against the
+store's monthly shrinkage allowance. Negative weekly sales figures in the sales system
+reflect return volume exceeding new sales in a given week and are a normal, expected
+pattern rather than a data error.
+
+5. STANDARD OPERATING PROCEDURES (SOP)
+Weekly sales reporting closes every Sunday at midnight, with dashboards refreshed by
+Tuesday morning. Store managers must reconcile any variance greater than 5% between
+system-recorded sales and register totals within 3 business days. Holiday-week staffing
+must be confirmed two weeks in advance, referencing the promotional calendar and the
+prior year's same-week sales as a baseline.

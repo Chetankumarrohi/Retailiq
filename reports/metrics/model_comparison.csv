@@ -1,0 +1,7 @@
+Model,RMSE,MAE,MAPE,WMAE,Notes
+LightGBM Regressor (Production),2096.39,1081.88,138.81,1113.74,Gradient boosted decision trees with rich feature set
+Sklearn HistGradientBoosting,2610.87,1264.45,218.49,1307.87,Standard tree ensemble benchmark
+PyTorch LSTM (Sequence),3163.72,1462.07,250.58,1534.78,12-week lookback deep sequence model
+Moving Average (4-Week),3456.32,1567.53,47.59,1627.09,Recent 4-week mean baseline
+Naive (Lag-1),3476.17,1540.86,32.31,1629.04,Simple persistence baseline
+Seasonal Naive (52-Week),3589.61,1717.45,485.7,1732.0,Same store-dept 52 weeks prior
