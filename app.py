@@ -15,9 +15,9 @@ from pathlib import Path
 from typing import Dict, Any, List, Optional
 
 # Project imports
-from src.database.analytics import AnalyticsService
+from src.database import AnalyticsService
 from src.forecasting.predictor import RetailForecasterPredictor
-from src.assistant.agent import RetailIQAssistant
+from src.assistant import RetailIQAssistant
 
 # ==========================================================
 # Streamlit Page Setup & Custom Styling

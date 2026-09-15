@@ -1,17 +1,17 @@
 # RetailIQ Technical Viva & Examination Q&A
 
-Comprehensive technical questions and concise, defensible answers covering data engineering, time-series modeling, FastAPI, React, SQL security, and AI agent architectures.
+Comprehensive technical questions and concise, defensible answers covering data engineering, time-series modeling, Streamlit, SQL security, and AI agent architectures.
 
 ---
 
 ### 1. What is RetailIQ?
-RetailIQ is an enterprise demand forecasting and multi-tool AI business assistant application. It combines a 45-store analytical star schema database, a 44-feature LightGBM demand forecasting model, and an autonomous Planner-Executor agent with natural language SQL querying, forecasting, and policy retrieval.
+RetailIQ is an academic demand forecasting and multi-tool AI business assistant application. It combines a 45-store analytical star schema database, a 44-feature LightGBM demand forecasting model, and an autonomous Planner-Executor agent with natural language SQL querying, forecasting, and policy retrieval — all in a single Streamlit application.
 
-### 2. Why use FastAPI instead of Flask or Django?
-FastAPI provides asynchronous execution (`asyncio`), automated OpenAPI (Swagger) documentation generation, type validation via Pydantic schemas, and sub-millisecond serialization speeds compared to synchronous frameworks.
+### 2. Why use Streamlit as the application framework?
+Streamlit provides rapid, Python-only web application development with reactive state management, built-in widget components (dropdowns, sliders, tabs), and zero JavaScript/HTML/CSS boilerplate. This makes it ideal for data science and academic projects — a single `streamlit run app.py` launches the full application.
 
-### 3. Why use React with Vite?
-React offers component-based declarative state management and ecosystem support for data visualization (Recharts). Vite leverages native ES modules and Rollup for instant Hot Module Replacement (HMR) and sub-second production bundle builds.
+### 3. Why not use a separate frontend and backend (e.g., React + FastAPI)?
+A separate frontend/backend architecture adds unnecessary complexity for an academic project: separate package managers (npm + pip), CORS configuration, REST API serialization, and two servers to manage. Streamlit unifies the entire stack into one Python codebase, which is easier to understand, demonstrate, and explain.
 
 ### 4. Why SQLite for the analytical database?
 SQLite is a zero-configuration, self-contained serverless SQL engine that allows B-Tree indexing and executes sub-millisecond complex analytical queries across ~421,570 records without external database daemon dependencies.
@@ -68,7 +68,7 @@ TF-IDF evaluates how important a word is to a document within a collection. Term
 Tool calling allows an LLM or planner to recognize user intent, construct structured arguments (JSON), and trigger external software routines (SQL queries, ML forecasters, vector searches) to generate factual outputs.
 
 ### 22. How does the RetailIQ planner select tools?
-The planner uses intent classification (or LLM tool-calling when API keys are supplied) to map questions to `sql_analytics_tool` for historical aggregations, `forecast_tool` for future demand predictions, or `retrieval_tool` for company policy searches.
+The planner uses intent classification to map questions to `sql_analytics_tool` for historical aggregations, `forecast_tool` for future demand predictions, or `retrieval_tool` for company policy searches.
 
 ### 23. How is the SQL analytics tool secured against injection and data loss?
 Security is enforced at two independent layers:
@@ -94,7 +94,7 @@ Negative `weekly_sales` values represent customer return and refund volumes that
 
 ### 29. How would you scale RetailIQ in an enterprise production environment?
 1. Migrate the data warehouse from SQLite to PostgreSQL, Snowflake, or BigQuery.
-2. Deploy the FastAPI backend inside Kubernetes clusters behind an API Gateway with horizontal pod autoscaling.
+2. Deploy the application behind an API Gateway with container orchestration (e.g., Docker + Kubernetes).
 3. Cache frequent analytical queries with Redis.
 4. Schedule automated weekly batch re-training of LightGBM models via Airflow or Kubeflow.
 

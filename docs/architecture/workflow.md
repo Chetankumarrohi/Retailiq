@@ -20,10 +20,9 @@ graph TD
     G1 --> H[Model Selection: LightGBM Champion WMAE $1,250]
     H --> I[Production Predictor Package: retailiq_forecaster.pkl]
     
-    D2 --> J[FastAPI Backend Application]
+    D2 --> J[Streamlit Web Application]
     I --> J
     K[policy_docs.txt + TF-IDF Vectorizer] --> J
     
-    J --> L[React 18 + Vite Frontend SPA]
-    L --> M[RetailIQ Business User]
+    J --> M[RetailIQ Business User]
 ```

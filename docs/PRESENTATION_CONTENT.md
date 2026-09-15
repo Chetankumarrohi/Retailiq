@@ -6,10 +6,10 @@
 - **Title:** RetailIQ: Enterprise Demand Forecasting & Multi-Tool AI Business Assistant
 - **Subtitle:** Unifying Relational Warehousing, Machine Learning Demand Forecasting, and Grounded Agentic Intelligence
 - **Key Points:**
-  - Production-ready full-stack retail intelligence system
+  - Clean academic retail intelligence application
   - 45 Stores, 81 Departments, 421,570 Historical Observations ($6.74B Volume)
-  - FastAPI Backend + React 18 / Vite SPA + LightGBM Engine + Autonomous Multi-Tool Agent
-- **Recommended Visual:** System hero banner showing the multi-tier architecture diagram.
+  - Streamlit UI + LightGBM Engine + Autonomous Multi-Tool Agent
+- **Recommended Visual:** System hero banner showing the architecture diagram.
 - **Speaker Notes:** "Welcome. Today we present RetailIQ, an integrated retail analytics platform that transitions retail organizations from static reporting to predictive demand intelligence and grounded conversational assistance."
 
 ---
@@ -37,15 +37,15 @@
 
 ---
 
-## SLIDE 4: Full-Stack System Architecture
-- **Title:** 3-Tier Multi-Tool Architecture
+## SLIDE 4: System Architecture
+- **Title:** Unified Streamlit Architecture
 - **Key Points:**
-  - **Frontend SPA:** React 18 + Vite with Recharts data visualization and glassmorphism styling.
-  - **API Gateway:** FastAPI Python application with asynchronous routing and strict Pydantic validation.
+  - **Streamlit Application:** Single `app.py` entry point with three interactive tabs (Dashboard, Forecast, Assistant).
+  - **Python Service Layer:** `src/database/`, `src/forecasting/`, `src/assistant/` with clean module separation.
   - **Security Layer:** Read-only SQLite URI (`mode=ro`) and SQL AST validator blocking destructive DDL/DML.
   - **Autonomous Agent Layer:** Planner-Executor loop routing queries to SQL, forecasting, and TF-IDF policy tools.
-- **Recommended Visual:** Architectural block diagram showing data flow from User down to DB, Model, and Knowledge Base.
-- **Speaker Notes:** "Our architecture cleanly separates presentation from business logic while enforcing strict security boundaries on data access."
+- **Recommended Visual:** Architectural block diagram showing data flow from User through Streamlit to DB, Model, and Knowledge Base.
+- **Speaker Notes:** "Our architecture keeps everything in a single Python application while cleanly separating service logic. No separate frontend or backend servers needed."
 
 ---
 
@@ -91,19 +91,19 @@
   - **Tool 1 — SQL Analytics:** Autonomously composes and executes safe `SELECT` queries against the star schema.
   - **Tool 2 — ML Forecaster:** Triggers recursive multi-step LightGBM predictions for any store-department segment.
   - **Tool 3 — Policy Retrieval:** Conducts TF-IDF cosine similarity search against internal company documentation.
-  - **Visible Execution Trace:** Full transparency in 'How RetailIQ Answered' panel with zero hidden hallucination.
-- **Recommended Visual:** Assistant interface screenshot showing chat bubble, execution trace badge, and policy citation card.
+  - **Visible Execution Trace:** Full transparency in tool trace expanders with zero hidden hallucination.
+- **Recommended Visual:** Assistant interface screenshot showing chat bubble, execution trace, and policy citation.
 - **Speaker Notes:** "RetailIQ's AI Assistant functions as an autonomous reasoning agent, dynamically choosing tools to deliver grounded, cited responses."
 
 ---
 
-## SLIDE 9: Security, Guardrails & Production Readiness
-- **Title:** Production Hardening & Security Guardrails
+## SLIDE 9: Security, Guardrails & Reliability
+- **Title:** Security Guardrails & Academic Rigor
 - **Key Points:**
   - **Zero-Trust SQL Sandboxing:** Dual-layer protection (application token whitelist + SQLite C-engine read-only connection).
   - **Injection Resistance:** Blocks multi-statement attacks, DDL commands (`DROP`, `ALTER`), and confidential file access.
   - **Factuality Guardrails:** Honest disclaimers when asked for unrecorded physical warehouse stock counts.
-  - **Automated Test Suite:** 20 automated Pytest test cases validating 100% of endpoints and security rules.
+  - **Automated Test Suite:** Pytest test cases validating database, forecasting, retrieval, assistant routing, and headless UI execution.
 - **Recommended Visual:** Security workflow diagram illustrating the dual-layer validation checkpoint.
 - **Speaker Notes:** "We prioritized reliability and security: the assistant is strictly sandboxed to read-only analytics and validated tools."
 
@@ -112,11 +112,11 @@
 ## SLIDE 10: Conclusion, Limitations & Future Scope
 - **Title:** Project Summary & Future Scope
 - **Key Points:**
-  - **Summary:** RetailIQ delivers a full-stack, submission-ready demand intelligence and conversational assistant platform.
+  - **Summary:** RetailIQ delivers a clean, submission-ready demand intelligence and conversational assistant platform.
   - **Known Limitations:** Transactional financial grain without physical warehouse stock counts; synthetic policy docs.
   - **Future Roadmap:**
     - Hierarchical reconciliation across store networks.
     - Probabilistic quantile demand forecasting ($P_{10}, P_{50}, P_{90}$).
-    - Enterprise cloud deployment on Snowflake and Kubernetes.
-- **Recommended Visual:** Summary scorecard table with checkmarks across all Phase 1, Phase 2, and Phase 3 deliverables.
+    - Enterprise cloud deployment with PostgreSQL and container orchestration.
+- **Recommended Visual:** Summary scorecard table with checkmarks across all deliverables.
 - **Speaker Notes:** "In conclusion, RetailIQ provides a robust blueprint for enterprise retail intelligence. Thank you for your time."

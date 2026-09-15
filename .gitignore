@@ -26,11 +26,6 @@ wheels/
 .coverage
 htmlcov/
 
-# Node / Frontend
-node_modules/
-frontend/node_modules/
-frontend/dist/
-
 # Jupyter Notebooks
 .ipynb_checkpoints
 */.ipynb_checkpoints/*
@@ -48,9 +43,6 @@ frontend/dist/
 
 # Environment Variables & Local Secrets
 .env
-backend/.env
-frontend/.env
-frontend/.env.local
 !*.env.example
 
 # Temporary Logs
