@@ -358,7 +358,6 @@ class AnalyticsService:
                     "row_count": len(df),
                     "columns": list(df.columns),
                     "data": preview.to_dict(orient="records"),
-                    "formatted_markdown": preview.to_markdown(index=False) if not preview.empty else "No records found."
                 }
         except Exception as e:
             return {

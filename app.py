@@ -576,15 +576,15 @@ with tab_fc:
 # TAB 3: BUSINESS ASSISTANT
 # ==========================================================
 with tab_agent:
-    st.markdown("#### Multi-Tool Business Assistant")
-    st.caption("Ask natural questions spanning SQL Analytics, Demand Forecasting, Policy Documentation, or Multi-Tool combinations.")
+    st.markdown("#### RetailIQ Business Assistant")
+    st.caption("Ask about sales, stores, departments, forecasts, or company policies.")
 
     # Initialize chat history & conversational session state
     if "messages" not in st.session_state:
         st.session_state["messages"] = [
             {
                 "role": "assistant",
-                "content": "Hello! I am RetailIQ's AI Business Assistant. I can analyze historical sales across our 45 stores, generate multi-step demand forecasts with LightGBM, and look up internal retail policies (returns, markdowns, inventory coverage). How can I assist you today?",
+                "content": "Hello! I am RetailIQ's AI Business Assistant. I can analyze historical sales across our 45 stores, compare stores and departments, generate multi-step demand forecasts with LightGBM, and look up internal retail policies (returns, markdowns, inventory coverage). How can I assist you today?",
                 "trace": []
             }
         ]
@@ -592,35 +592,40 @@ with tab_agent:
         st.session_state["agent_context"] = {}
 
     # Example Prompt Quick Buttons
-    st.markdown("**Try asking:**")
-    eq1, eq2, eq3, eq4 = st.columns(4)
+    st.markdown("<div style='font-size: 0.85rem; font-weight: 500; color: #66645F; margin-bottom: 6px;'>Example questions:</div>", unsafe_allow_html=True)
+    eq1, eq2, eq3, eq4, eq5 = st.columns(5)
     quick_prompt = None
     with eq1:
-        if st.button("🏆 Top 5 Stores by Sales", use_container_width=True):
+        if st.button("🏆 Top 5 Stores", use_container_width=True):
             quick_prompt = "Show top 5 stores by sales"
     with eq2:
-        if st.button("🔮 Forecast Store 20 Dept 3", use_container_width=True):
-            quick_prompt = "Forecast Store 20 Department 3 for 4 weeks"
+        if st.button("⚖️ Compare Stores", use_container_width=True):
+            quick_prompt = "Compare Store 10 and Store 20"
     with eq3:
-        if st.button("📜 Customer Return Policy", use_container_width=True):
-            quick_prompt = "What is our customer return policy?"
+        if st.button("🎉 Holiday Performance", use_container_width=True):
+            quick_prompt = "What happened during holidays?"
     with eq4:
-        if st.button("⚡ Best Dept & Forecast", use_container_width=True):
-            quick_prompt = "Which department performs best in Store 20 and forecast it for the next 4 weeks?"
+        if st.button("🔮 4-Week Forecast", use_container_width=True):
+            quick_prompt = "Forecast Store 20 Department 3 for 4 weeks"
+    with eq5:
+        if st.button("📜 Return Policy", use_container_width=True):
+            quick_prompt = "What is our customer return policy?"
+
+    st.markdown("<div style='height: 8px;'></div>", unsafe_allow_html=True)
 
     # Display Chat History
     for msg in st.session_state["messages"]:
         with st.chat_message(msg["role"]):
             st.markdown(msg["content"])
             if msg.get("trace"):
-                with st.expander("🛠️ Tool Execution Trace", expanded=False):
+                with st.expander("🛠️ Tool details", expanded=False):
                     for step in msg["trace"]:
                         st.markdown(f"**Step {step.get('step', 1)}: `{step.get('tool', 'Tool')}`**")
                         st.caption(f"**Reason:** {step.get('reason', '')}")
                         if step.get("query"):
                             st.code(step["query"], language="sql")
                         if step.get("metadata"):
-                            st.markdown(f"*Metadata / Source:* `{step['metadata']}`")
+                            st.markdown(f"*Details / Source:* `{step['metadata']}`")
                         st.divider()
 
     # Chat Input Handling
@@ -636,7 +641,7 @@ with tab_agent:
         # Execute Assistant
         assistant = get_assistant()
         with st.chat_message("assistant"):
-            with st.spinner("Analyzing request and executing tools..."):
+            with st.spinner("Analyzing request..."):
                 resp = assistant.ask(active_query, session_context=st.session_state["agent_context"])
                 
                 # Update session context
@@ -647,14 +652,14 @@ with tab_agent:
 
                 st.markdown(answer)
                 if trace:
-                    with st.expander("🛠️ Tool Execution Trace", expanded=True):
+                    with st.expander("🛠️ Tool details", expanded=False):
                         for step in trace:
                             st.markdown(f"**Step {step.get('step', 1)}: `{step.get('tool', 'Tool')}`**")
                             st.caption(f"**Reason:** {step.get('reason', '')}")
                             if step.get("query"):
                                 st.code(step["query"], language="sql")
                             if step.get("metadata"):
-                                st.markdown(f"*Metadata / Source:* `{step['metadata']}`")
+                                st.markdown(f"*Details / Source:* `{step['metadata']}`")
                             st.divider()
 
         # Save to chat history
@@ -663,3 +668,4 @@ with tab_agent:
             "content": answer,
             "trace": trace
         })
+
