@@ -14,9 +14,12 @@ router = APIRouter(prefix="/dashboard", tags=["Dashboard"])
 
 
 @router.get("/summary", response_model=DashboardSummary, summary="Executive KPI summary")
-def get_summary():
-    """Returns top-level KPIs (revenue, average weekly sales, return rate, lifts)."""
-    return AnalyticsService.get_summary()
+def get_summary(
+    store_id: Optional[int] = Query(None, description="Optional store filter"),
+    dept_id: Optional[int] = Query(None, description="Optional department filter")
+):
+    """Returns top-level KPIs (revenue, average weekly sales, return rate, lifts) for filtered subset."""
+    return AnalyticsService.get_summary(store_id=store_id, dept_id=dept_id)
 
 
 @router.get("/sales-trend", response_model=List[SalesTrendPoint], summary="Historical sales trend")
@@ -39,10 +42,11 @@ def get_sales_trend(
 
 @router.get("/store-ranking", response_model=List[StoreRankingItem], summary="Store revenue rankings")
 def get_store_ranking(
-    limit: int = Query(15, ge=1, le=45, description="Number of stores to return")
+    limit: int = Query(15, ge=1, le=45, description="Number of stores to return"),
+    dept_id: Optional[int] = Query(None, description="Optional department filter")
 ):
-    """Returns top stores ranked by historical sales."""
-    return AnalyticsService.get_store_ranking(limit=limit)
+    """Returns top stores ranked by historical sales, optionally filtered by department."""
+    return AnalyticsService.get_store_ranking(limit=limit, dept_id=dept_id)
 
 
 @router.get("/department-ranking", response_model=List[DeptRankingItem], summary="Department revenue rankings")
@@ -50,27 +54,31 @@ def get_department_ranking(
     limit: int = Query(15, ge=1, le=81, description="Number of departments to return"),
     store_id: Optional[int] = Query(None, description="Optional store filter")
 ):
-    """Returns top departments ranked by total sales."""
+    """Returns top departments ranked by total sales, optionally filtered by store."""
     return AnalyticsService.get_department_ranking(limit=limit, store_id=store_id)
 
 
 @router.get("/promotion-effectiveness", response_model=List[PromoEffectivenessItem], summary="Promotional markdown impact")
 def get_promotion_effectiveness(
-    store_id: Optional[int] = Query(None, description="Optional store filter")
+    store_id: Optional[int] = Query(None, description="Optional store filter"),
+    dept_id: Optional[int] = Query(None, description="Optional department filter")
 ):
-    """Compares average sales during promotional vs non-promotional markdown weeks."""
-    return AnalyticsService.get_promotion_effectiveness(store_id=store_id)
+    """Compares average sales during promotional vs non-promotional markdown weeks on filtered subset."""
+    return AnalyticsService.get_promotion_effectiveness(store_id=store_id, dept_id=dept_id)
 
 
 @router.get("/holiday-analysis", response_model=List[HolidayAnalysisItem], summary="Holiday vs normal sales comparison")
 def get_holiday_analysis(
-    store_id: Optional[int] = Query(None, description="Optional store filter")
+    store_id: Optional[int] = Query(None, description="Optional store filter"),
+    dept_id: Optional[int] = Query(None, description="Optional department filter")
 ):
-    """Compares average weekly sales between holiday and normal weeks."""
-    return AnalyticsService.get_holiday_analysis(store_id=store_id)
+    """Compares average weekly sales between holiday and normal weeks on filtered subset."""
+    return AnalyticsService.get_holiday_analysis(store_id=store_id, dept_id=dept_id)
 
 
 @router.get("/store-types", response_model=List[StoreTypePerformanceItem], summary="Store Type A/B/C breakdown")
-def get_store_types():
-    """Returns store count, average size, and revenue breakdown by store type."""
-    return AnalyticsService.get_store_types()
+def get_store_types(
+    dept_id: Optional[int] = Query(None, description="Optional department filter")
+):
+    """Returns store count, average size, and revenue breakdown by store type, optionally filtered by department."""
+    return AnalyticsService.get_store_types(dept_id=dept_id)

@@ -13,31 +13,47 @@ async function apiFetch(path, options = {}) {
   return res.json();
 }
 
+function buildQuery(params = {}) {
+  const q = new URLSearchParams();
+  for (const [key, val] of Object.entries(params)) {
+    if (val !== undefined && val !== null && val !== '' && val !== 'all') {
+      q.set(key, val);
+    }
+  }
+  const str = q.toString();
+  return str ? `?${str}` : '';
+}
+
 export const api = {
   // Health
   getHealth: () => apiFetch('/health'),
 
   // Metadata
   getStores: () => apiFetch('/stores'),
-  getDepartments: (storeId) => apiFetch(`/departments${storeId ? `?store_id=${storeId}` : ''}`),
+  getDepartments: (storeId) =>
+    apiFetch(`/departments${buildQuery({ store_id: storeId })}`),
 
   // Dashboard
-  getSummary: () => apiFetch('/dashboard/summary'),
-  getSalesTrend: (params = {}) => {
-    const q = new URLSearchParams();
-    if (params.granularity) q.set('granularity', params.granularity);
-    if (params.store_id) q.set('store_id', params.store_id);
-    if (params.dept_id) q.set('dept_id', params.dept_id);
-    return apiFetch(`/dashboard/sales-trend?${q.toString()}`);
-  },
-  getStoreRanking: (limit = 15) => apiFetch(`/dashboard/store-ranking?limit=${limit}`),
+  getSummary: (storeId, deptId) =>
+    apiFetch(`/dashboard/summary${buildQuery({ store_id: storeId, dept_id: deptId })}`),
+
+  getSalesTrend: (params = {}) =>
+    apiFetch(`/dashboard/sales-trend${buildQuery(params)}`),
+
+  getStoreRanking: (limit = 15, deptId) =>
+    apiFetch(`/dashboard/store-ranking${buildQuery({ limit, dept_id: deptId })}`),
+
   getDeptRanking: (limit = 15, storeId) =>
-    apiFetch(`/dashboard/department-ranking?limit=${limit}${storeId ? `&store_id=${storeId}` : ''}`),
-  getPromoEffectiveness: (storeId) =>
-    apiFetch(`/dashboard/promotion-effectiveness${storeId ? `?store_id=${storeId}` : ''}`),
-  getHolidayAnalysis: (storeId) =>
-    apiFetch(`/dashboard/holiday-analysis${storeId ? `?store_id=${storeId}` : ''}`),
-  getStoreTypes: () => apiFetch('/dashboard/store-types'),
+    apiFetch(`/dashboard/department-ranking${buildQuery({ limit, store_id: storeId })}`),
+
+  getPromoEffectiveness: (storeId, deptId) =>
+    apiFetch(`/dashboard/promotion-effectiveness${buildQuery({ store_id: storeId, dept_id: deptId })}`),
+
+  getHolidayAnalysis: (storeId, deptId) =>
+    apiFetch(`/dashboard/holiday-analysis${buildQuery({ store_id: storeId, dept_id: deptId })}`),
+
+  getStoreTypes: (deptId) =>
+    apiFetch(`/dashboard/store-types${buildQuery({ dept_id: deptId })}`),
 
   // Forecast
   postForecast: (storeId, deptId, horizonWeeks = 4) =>

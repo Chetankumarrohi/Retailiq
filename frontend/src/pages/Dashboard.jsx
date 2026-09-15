@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { api } from '../api/client'
 import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid,
@@ -48,47 +48,57 @@ export default function Dashboard() {
   const [holidayAnalysis, setHolidayAnalysis] = useState([])
   const [promoEffectiveness, setPromoEffectiveness] = useState([])
   const [storeTypes, setStoreTypes] = useState([])
-  
-  // Filters
+
+  // Shared Filter State
   const [storesList, setStoresList] = useState([])
   const [deptList, setDeptList] = useState([])
   const [selectedStore, setSelectedStore] = useState('')
   const [selectedDept, setSelectedDept] = useState('')
-  const [granularity, setGranularity] = useState('monthly')
-  
+  const [granularity, setGranularity] = useState('weekly')
+
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
-  // Initial metadata load
+  // Track latest request to avoid race conditions
+  const latestRequestId = useRef(0)
+
+  // Load store list once on mount
   useEffect(() => {
-    async function loadMetadata() {
+    async function loadStores() {
       try {
         const stores = await api.getStores()
         setStoresList(stores || [])
-        const depts = await api.getDepartments()
-        setDeptList(depts || [])
       } catch (err) {
-        console.error('Failed to load metadata:', err)
+        console.error('Failed to load stores metadata:', err)
       }
     }
-    loadMetadata()
+    loadStores()
   }, [])
 
-  // Update departments when store filter changes
+  // Update dependent department dropdown when selectedStore changes
   useEffect(() => {
     async function updateDepts() {
       try {
-        const depts = await api.getDepartments(selectedStore ? Number(selectedStore) : null)
+        const storeId = selectedStore ? Number(selectedStore) : null
+        const depts = await api.getDepartments(storeId)
         setDeptList(depts || [])
+
+        // If currently selected department is not in the store's department list, reset to all
+        if (selectedDept && depts && !depts.includes(Number(selectedDept))) {
+          setSelectedDept('')
+        }
       } catch (err) {
-        console.error('Failed to update depts:', err)
+        console.error('Failed to update departments list:', err)
       }
     }
     updateDepts()
   }, [selectedStore])
 
-  // Load dashboard analytics
+  // Fetch all dashboard metrics whenever filters change
   useEffect(() => {
+    const requestId = ++latestRequestId.current
+    let isCancelled = false
+
     async function loadDashboardData() {
       try {
         setLoading(true)
@@ -105,31 +115,48 @@ export default function Dashboard() {
           promoRes,
           typesRes
         ] = await Promise.all([
-          api.getSummary(),
+          api.getSummary(storeId, deptId),
           api.getSalesTrend({ granularity, store_id: storeId, dept_id: deptId }),
-          api.getStoreRanking(10),
+          api.getStoreRanking(10, deptId),
           api.getDeptRanking(10, storeId),
-          api.getHolidayAnalysis(storeId),
-          api.getPromoEffectiveness(storeId),
-          api.getStoreTypes()
+          api.getHolidayAnalysis(storeId, deptId),
+          api.getPromoEffectiveness(storeId, deptId),
+          api.getStoreTypes(deptId)
         ])
 
-        setSummary(sumRes)
-        setSalesTrend(trendRes || [])
-        setStoreRanking(storeRankRes || [])
-        setDeptRanking(deptRankRes || [])
-        setHolidayAnalysis(holRes || [])
-        setPromoEffectiveness(promoRes || [])
-        setStoreTypes(typesRes || [])
+        if (!isCancelled && requestId === latestRequestId.current) {
+          setSummary(sumRes)
+          setSalesTrend(trendRes || [])
+          setStoreRanking(storeRankRes || [])
+          setDeptRanking(deptRankRes || [])
+          setHolidayAnalysis(holRes || [])
+          setPromoEffectiveness(promoRes || [])
+          setStoreTypes(typesRes || [])
+        }
       } catch (err) {
-        console.error('Dashboard load error:', err)
-        setError(err.message)
+        if (!isCancelled && requestId === latestRequestId.current) {
+          console.error('Dashboard load error:', err)
+          setError(err.message)
+        }
       } finally {
-        setLoading(false)
+        if (!isCancelled && requestId === latestRequestId.current) {
+          setLoading(false)
+        }
       }
     }
+
     loadDashboardData()
+
+    return () => {
+      isCancelled = true
+    }
   }, [selectedStore, selectedDept, granularity])
+
+  // Context line for filter feedback
+  const storeLabel = selectedStore ? `Store ${selectedStore}` : 'All Stores'
+  const deptLabel = selectedDept ? `Department ${selectedDept}` : 'All Departments'
+  const viewLabel = granularity === 'monthly' ? 'Monthly View' : 'Weekly View'
+  const filterContextText = `${storeLabel} · ${deptLabel} · ${viewLabel}`
 
   return (
     <div className="dashboard-page">
@@ -137,10 +164,12 @@ export default function Dashboard() {
       <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
         <div>
           <h2>Executive Overview</h2>
-          <p>Multi-Store Retail Demand Intelligence & Chain Performance</p>
+          <p style={{ color: 'var(--accent-primary)', fontWeight: 500, marginTop: '2px' }}>
+            {filterContextText}
+          </p>
         </div>
 
-        {/* Filters */}
+        {/* Global Filter Controls */}
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
           <div className="form-group" style={{ minWidth: '150px' }}>
             <select
@@ -157,13 +186,13 @@ export default function Dashboard() {
             </select>
           </div>
 
-          <div className="form-group" style={{ minWidth: '150px' }}>
+          <div className="form-group" style={{ minWidth: '160px' }}>
             <select
               value={selectedDept}
               onChange={(e) => setSelectedDept(e.target.value)}
               style={{ padding: '7px 10px', fontSize: '13px' }}
             >
-              <option value="">All Departments (81)</option>
+              <option value="">All Departments ({deptList.length})</option>
               {deptList.map((d) => (
                 <option key={d} value={d}>
                   Department {d}
@@ -172,22 +201,8 @@ export default function Dashboard() {
             </select>
           </div>
 
+          {/* Time Granularity Selector */}
           <div style={{ display: 'flex', background: '#FFFFFF', border: '1px solid var(--border-medium)', borderRadius: '6px', padding: '2px' }}>
-            <button
-              style={{
-                background: granularity === 'monthly' ? 'var(--accent-light)' : 'transparent',
-                color: granularity === 'monthly' ? 'var(--accent-primary)' : 'var(--text-secondary)',
-                border: 'none',
-                padding: '5px 12px',
-                borderRadius: '4px',
-                fontSize: '12px',
-                fontWeight: 600,
-                cursor: 'pointer'
-              }}
-              onClick={() => setGranularity('monthly')}
-            >
-              Monthly
-            </button>
             <button
               style={{
                 background: granularity === 'weekly' ? 'var(--accent-light)' : 'transparent',
@@ -203,6 +218,21 @@ export default function Dashboard() {
             >
               Weekly
             </button>
+            <button
+              style={{
+                background: granularity === 'monthly' ? 'var(--accent-light)' : 'transparent',
+                color: granularity === 'monthly' ? 'var(--accent-primary)' : 'var(--text-secondary)',
+                border: 'none',
+                padding: '5px 12px',
+                borderRadius: '4px',
+                fontSize: '12px',
+                fontWeight: 600,
+                cursor: 'pointer'
+              }}
+              onClick={() => setGranularity('monthly')}
+            >
+              Monthly
+            </button>
           </div>
         </div>
       </div>
@@ -213,89 +243,122 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Row 1: Primary KPIs */}
+      {/* Row 1: Primary Filter-Aware KPI Cards */}
       <div className="kpi-grid">
         <div className="kpi-card">
           <div className="kpi-label">Total Sales</div>
           <div className="kpi-value">
-            {summary ? fmtCurrency(summary.total_revenue || 6737218987.11) : '$6.74B'}
+            {summary ? fmtCurrency(summary.total_revenue) : '$0'}
           </div>
-          <div className="kpi-sub">Historical dataset volume</div>
+          <div className="kpi-sub">
+            {!selectedStore && !selectedDept && 'Historical dataset volume'}
+            {selectedStore && !selectedDept && `Store ${selectedStore} volume`}
+            {!selectedStore && selectedDept && `Department ${selectedDept} volume`}
+            {selectedStore && selectedDept && `Store ${selectedStore} · Dept ${selectedDept}`}
+          </div>
         </div>
 
         <div className="kpi-card">
           <div className="kpi-label">Average Weekly Sales</div>
           <div className="kpi-value">
-            {summary ? fmtCurrency(summary.avg_weekly_sales || 15981.26) : '$15,981'}
+            {summary ? fmtCurrency(summary.avg_weekly_sales) : '$0'}
           </div>
-          <div className="kpi-sub">Per store-department week</div>
+          <div className="kpi-sub">Subset weekly sales baseline</div>
         </div>
 
         <div className="kpi-card">
           <div className="kpi-label">Stores</div>
           <div className="kpi-value">
-            {summary ? summary.total_stores : 45}
+            {summary ? summary.total_stores : 0}
           </div>
-          <div className="kpi-sub">Type A (22), B (17), C (6)</div>
+          <div className="kpi-sub">
+            {!selectedStore && !selectedDept && 'Active in dataset'}
+            {selectedStore && 'Selected store'}
+            {!selectedStore && selectedDept && `Selling Dept ${selectedDept}`}
+          </div>
         </div>
 
         <div className="kpi-card">
           <div className="kpi-label">Departments</div>
           <div className="kpi-value">
-            {summary ? summary.total_departments : 81}
+            {summary ? summary.total_departments : 0}
           </div>
-          <div className="kpi-sub">Merchandise categories</div>
+          <div className="kpi-sub">
+            {!selectedStore && !selectedDept && 'Available departments'}
+            {selectedDept && 'Selected department'}
+            {selectedStore && !selectedDept && `In Store ${selectedStore}`}
+          </div>
         </div>
       </div>
 
-      {/* Row 2: Secondary Business Insights */}
+      {/* Row 2: Secondary Dynamic Insights */}
       <div className="kpi-grid" style={{ marginBottom: '20px' }}>
         <div className="kpi-card">
-          <div className="kpi-label">Top Store</div>
-          <div className="kpi-value" style={{ fontSize: '20px' }}>
-            Store 20
+          <div className="kpi-label">
+            {selectedStore ? 'Selected Store' : 'Top Store'}
           </div>
-          <div className="kpi-sub">$301.4M lifetime volume</div>
+          <div className="kpi-value" style={{ fontSize: '20px' }}>
+            {summary && summary.top_store_id ? `Store ${summary.top_store_id}` : '—'}
+          </div>
+          <div className="kpi-sub">
+            {summary ? `${fmtCurrency(summary.top_store_revenue)} sales in subset` : '—'}
+          </div>
         </div>
 
         <div className="kpi-card">
-          <div className="kpi-label">Top Department</div>
-          <div className="kpi-value" style={{ fontSize: '20px' }}>
-            Department 92
+          <div className="kpi-label">
+            {selectedDept ? 'Selected Department' : 'Top Department'}
           </div>
-          <div className="kpi-sub">$483.9M lifetime volume</div>
+          <div className="kpi-value" style={{ fontSize: '20px' }}>
+            {summary && summary.top_dept_id ? `Dept ${summary.top_dept_id}` : '—'}
+          </div>
+          <div className="kpi-sub">
+            {summary ? `${fmtCurrency(summary.top_dept_revenue)} sales in subset` : '—'}
+          </div>
         </div>
 
         <div className="kpi-card">
           <div className="kpi-label">Holiday Impact</div>
-          <div className="kpi-value" style={{ color: 'var(--status-success)' }}>
-            +7.13%
+          <div
+            className="kpi-value"
+            style={{
+              color: summary && summary.holiday_lift_pct >= 0 ? 'var(--status-success)' : 'var(--status-danger)',
+              fontSize: '20px'
+            }}
+          >
+            {summary ? `${summary.holiday_lift_pct >= 0 ? '+' : ''}${summary.holiday_lift_pct}%` : '0%'}
           </div>
-          <div className="kpi-sub">$17,036 vs $15,901 baseline</div>
+          <div className="kpi-sub">Holiday vs regular week lift</div>
         </div>
 
         <div className="kpi-card">
           <div className="kpi-label">Promotion Impact</div>
-          <div className="kpi-value" style={{ color: 'var(--accent-secondary)' }}>
-            +1.92%
+          <div
+            className="kpi-value"
+            style={{
+              color: summary && summary.promotion_lift_pct >= 0 ? 'var(--accent-secondary)' : 'var(--status-danger)',
+              fontSize: '20px'
+            }}
+          >
+            {summary ? `${summary.promotion_lift_pct >= 0 ? '+' : ''}${summary.promotion_lift_pct}%` : '0%'}
           </div>
-          <div className="kpi-sub">Active markdown weeks</div>
+          <div className="kpi-sub">MarkDown-active week lift</div>
         </div>
       </div>
 
-      {/* Chart 1: Sales Trend */}
+      {/* Chart 1: Time Series Sales Trend */}
       <div className="chart-card" style={{ marginBottom: '20px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-          <h3>Weekly Sales Trend</h3>
+          <h3>Sales Trend ({granularity === 'monthly' ? 'Monthly' : 'Weekly'})</h3>
           <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
-            {selectedStore ? `Store ${selectedStore}` : 'Chain Total'} {selectedDept ? `· Dept ${selectedDept}` : ''}
+            {filterContextText}
           </span>
         </div>
 
         {loading ? (
           <div className="loading-container">
             <div className="spinner" />
-            <div className="loading-text">Loading sales data...</div>
+            <div className="loading-text">Loading sales time-series...</div>
           </div>
         ) : (
           <ResponsiveContainer width="100%" height={300}>
@@ -316,7 +379,7 @@ export default function Dashboard() {
               <Line
                 type="monotone"
                 dataKey="sales"
-                name="Weekly Sales"
+                name="Sales"
                 stroke="#2F5D50"
                 strokeWidth={2}
                 dot={granularity === 'monthly' ? { r: 3, fill: '#2F5D50' } : false}
@@ -327,10 +390,10 @@ export default function Dashboard() {
         )}
       </div>
 
-      {/* Chart Row 2: Store & Dept Performance */}
+      {/* Chart Row 2: Store Performance & Department Performance */}
       <div className="chart-grid">
         <div className="chart-card">
-          <h3>Store Performance</h3>
+          <h3>Store Performance {selectedDept ? `(Dept ${selectedDept})` : ''}</h3>
           <ResponsiveContainer width="100%" height={280}>
             <BarChart
               data={storeRanking}
@@ -360,7 +423,7 @@ export default function Dashboard() {
         </div>
 
         <div className="chart-card">
-          <h3>Department Performance</h3>
+          <h3>Department Performance {selectedStore ? `(Store ${selectedStore})` : ''}</h3>
           <ResponsiveContainer width="100%" height={280}>
             <BarChart
               data={deptRanking}
@@ -383,7 +446,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Chart Row 3: Holiday / Promotion Comparison & Store Types */}
+      {/* Chart Row 3: Holiday / Promotion Breakdown & Store Types */}
       <div className="chart-grid">
         <div className="chart-card">
           <h3>Holiday Impact & Promotion Effectiveness</h3>
@@ -392,12 +455,24 @@ export default function Dashboard() {
               <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 600, letterSpacing: '0.5px' }}>
                 Holiday Season
               </div>
-              <div style={{ fontSize: '22px', fontWeight: 700, color: 'var(--status-success)', margin: '6px 0' }}>
-                +7.13%
+              <div
+                style={{
+                  fontSize: '22px',
+                  fontWeight: 700,
+                  color: summary && summary.holiday_lift_pct >= 0 ? 'var(--status-success)' : 'var(--status-danger)',
+                  margin: '6px 0'
+                }}
+              >
+                {summary ? `${summary.holiday_lift_pct >= 0 ? '+' : ''}${summary.holiday_lift_pct}%` : '0%'}
               </div>
               <p style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
-                Holiday Avg: <strong>$17,036</strong><br />
-                Normal Avg: <strong>$15,901</strong>
+                {holidayAnalysis.find((h) => h.is_holiday === 1)
+                  ? `Holiday: $${Number(holidayAnalysis.find((h) => h.is_holiday === 1).avg_weekly_sales).toLocaleString()}`
+                  : 'Holiday: —'}
+                <br />
+                {holidayAnalysis.find((h) => h.is_holiday === 0)
+                  ? `Regular: $${Number(holidayAnalysis.find((h) => h.is_holiday === 0).avg_weekly_sales).toLocaleString()}`
+                  : 'Regular: —'}
               </p>
             </div>
 
@@ -405,19 +480,31 @@ export default function Dashboard() {
               <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 600, letterSpacing: '0.5px' }}>
                 MarkDown Promotions
               </div>
-              <div style={{ fontSize: '22px', fontWeight: 700, color: 'var(--accent-primary)', margin: '6px 0' }}>
-                +1.92%
+              <div
+                style={{
+                  fontSize: '22px',
+                  fontWeight: 700,
+                  color: summary && summary.promotion_lift_pct >= 0 ? 'var(--accent-primary)' : 'var(--status-danger)',
+                  margin: '6px 0'
+                }}
+              >
+                {summary ? `${summary.promotion_lift_pct >= 0 ? '+' : ''}${summary.promotion_lift_pct}%` : '0%'}
               </div>
               <p style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
-                Promo Avg: <strong>$16,177</strong><br />
-                Non-Promo: <strong>$15,872</strong>
+                {promoEffectiveness.find((p) => p.period === 'Promo')
+                  ? `Promo: $${Number(promoEffectiveness.find((p) => p.period === 'Promo').avg_weekly_sales).toLocaleString()}`
+                  : 'Promo: —'}
+                <br />
+                {promoEffectiveness.find((p) => p.period === 'No Promo')
+                  ? `Non-Promo: $${Number(promoEffectiveness.find((p) => p.period === 'No Promo').avg_weekly_sales).toLocaleString()}`
+                  : 'Non-Promo: —'}
               </p>
             </div>
           </div>
         </div>
 
         <div className="chart-card">
-          <h3>Store Type Performance</h3>
+          <h3>Store Type Performance {selectedDept ? `(Dept ${selectedDept})` : ''}</h3>
           <ResponsiveContainer width="100%" height={220}>
             <PieChart>
               <Pie
@@ -443,7 +530,7 @@ export default function Dashboard() {
                   fontSize: '12px'
                 }}
                 formatter={(val, name) => [
-                  `${fmtCurrency(val)} (${((val / 6737218987.11) * 100).toFixed(1)}%)`,
+                  `${fmtCurrency(val)}`,
                   `Type ${name}`
                 ]}
               />
