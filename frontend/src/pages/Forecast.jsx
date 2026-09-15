@@ -16,17 +16,17 @@ const CustomTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null
   return (
     <div style={{
-      background: 'rgba(15, 23, 42, 0.95)',
-      border: '1px solid rgba(148, 163, 184, 0.2)',
-      borderRadius: '8px',
-      padding: '10px 14px',
+      background: '#FFFFFF',
+      border: '1px solid #DDDAD3',
+      borderRadius: '6px',
+      padding: '8px 12px',
       fontSize: '12px',
-      boxShadow: '0 8px 24px rgba(0,0,0,0.5)'
+      boxShadow: '0 4px 6px -1px rgba(0,0,0,0.08)'
     }}>
-      <p style={{ color: '#94a3b8', marginBottom: '4px', fontWeight: 600 }}>{label}</p>
+      <p style={{ color: '#66645F', marginBottom: '4px', fontWeight: 600 }}>{label}</p>
       {payload.map((p, i) => (
-        <p key={i} style={{ color: p.color || '#60a5fa', margin: '2px 0' }}>
-          {p.name}: <strong>{fmtCurrency(p.value)}</strong>
+        <p key={i} style={{ color: '#1C1C1C', margin: '2px 0' }}>
+          {p.name}: <strong style={{ color: p.color || '#2F5D50' }}>{fmtCurrency(p.value)}</strong>
         </p>
       ))}
     </div>
@@ -65,14 +65,13 @@ export default function Forecast() {
     }
   }
 
-  // Combine historical baseline reference with forecast points for visualization
+  // Combine historical reference with projected steps
   const chartData = result
     ? [
         {
           week: `${result.historical_summary.last_known_date} (Hist)`,
           historical_sales: result.historical_summary.last_known_sales,
-          predicted_sales: result.historical_summary.last_known_sales,
-          is_boundary: true
+          predicted_sales: result.historical_summary.last_known_sales
         },
         ...result.predictions.map((p) => ({
           week: p.week,
@@ -97,10 +96,10 @@ export default function Forecast() {
         <p>Forecast future weekly sales using historical demand patterns, store characteristics and retail features.</p>
       </div>
 
-      {/* Controls Card */}
-      <div className="glass-card" style={{ marginBottom: '24px' }}>
+      {/* Control Panel */}
+      <div className="card" style={{ marginBottom: '20px' }}>
         <div className="forecast-controls">
-          <div className="form-group" style={{ flex: 1, minWidth: '200px' }}>
+          <div className="form-group" style={{ flex: 1, minWidth: '180px' }}>
             <label>Store</label>
             <select
               value={storeId}
@@ -114,7 +113,7 @@ export default function Forecast() {
             </select>
           </div>
 
-          <div className="form-group" style={{ minWidth: '150px' }}>
+          <div className="form-group" style={{ minWidth: '140px' }}>
             <label>Department</label>
             <select
               value={deptId}
@@ -126,8 +125,8 @@ export default function Forecast() {
             </select>
           </div>
 
-          <div className="form-group" style={{ minWidth: '180px' }}>
-            <label>Forecast Horizon: {horizon} Weeks</label>
+          <div className="form-group" style={{ minWidth: '160px' }}>
+            <label>Horizon: {horizon} Weeks</label>
             <input
               type="range"
               min={1}
@@ -141,127 +140,120 @@ export default function Forecast() {
             className="btn-primary"
             onClick={runForecast}
             disabled={loading}
-            style={{ height: '42px', alignSelf: 'flex-end' }}
+            style={{ height: '38px', alignSelf: 'flex-end' }}
           >
-            {loading ? '⏳ Computing...' : '🔮 Generate Forecast'}
+            {loading ? 'Calculating...' : 'Generate Forecast'}
           </button>
         </div>
       </div>
 
       {error && (
-        <div className="error-banner" style={{ marginBottom: '24px' }}>
-          <span>⚠️ {error}</span>
+        <div className="error-banner" style={{ marginBottom: '20px' }}>
+          <span>{error}</span>
         </div>
       )}
 
       {loading && (
         <div className="loading-container">
           <div className="spinner" />
-          <div className="loading-text">Computing recursive multi-step LightGBM demand forecast...</div>
+          <div className="loading-text">Generating recursive demand forecast...</div>
         </div>
       )}
 
       {result && (
         <>
-          {/* Forecast Summary KPIs */}
-          <div className="kpi-grid" style={{ marginBottom: '24px' }}>
+          {/* Summary KPIs */}
+          <div className="kpi-grid" style={{ marginBottom: '20px' }}>
             <div className="kpi-card">
-              <span className="kpi-icon">🏪</span>
-              <div className="kpi-label">Store & Dept</div>
-              <div className="kpi-value" style={{ fontSize: '20px' }}>
-                Store {result.store_id} • Dept {result.dept_id}
+              <div className="kpi-label">Store & Department</div>
+              <div className="kpi-value" style={{ fontSize: '18px' }}>
+                Store {result.store_id} · Dept {result.dept_id}
               </div>
-              <div className="kpi-sub">Target Time-Series Segment</div>
+              <div className="kpi-sub">Target segment</div>
             </div>
 
             <div className="kpi-card">
-              <span className="kpi-icon">⏱️</span>
               <div className="kpi-label">Horizon</div>
               <div className="kpi-value">
                 {result.horizon_weeks} Weeks
               </div>
-              <div className="kpi-sub">Recursive multi-step roll</div>
+              <div className="kpi-sub">Recursive multi-step forecast</div>
             </div>
 
             <div className="kpi-card">
-              <span className="kpi-icon">🎯</span>
               <div className="kpi-label">Next Week Forecast</div>
               <div className="kpi-value" style={{ color: 'var(--accent-primary)' }}>
                 {fmtCurrency(nextWeekForecast)}
               </div>
-              <div className="kpi-sub">Week of {result.predictions[0]?.week}</div>
+              <div className="kpi-sub">Week ending {result.predictions[0]?.week}</div>
             </div>
 
             <div className="kpi-card">
-              <span className="kpi-icon">📊</span>
               <div className="kpi-label">Average Forecast</div>
-              <div className="kpi-value" style={{ color: 'var(--accent-success)' }}>
+              <div className="kpi-value">
                 {fmtCurrency(avgForecast)}
               </div>
-              <div className="kpi-sub">Across {result.horizon_weeks} weeks horizon</div>
+              <div className="kpi-sub">Across {result.horizon_weeks} weeks</div>
             </div>
 
             <div className="kpi-card">
-              <span className="kpi-icon">🤖</span>
               <div className="kpi-label">Model Engine</div>
-              <div className="kpi-value" style={{ fontSize: '15px' }}>
+              <div className="kpi-value" style={{ fontSize: '14px' }}>
                 {result.model_type}
               </div>
-              <div className="kpi-sub">Version {result.model_version}</div>
+              <div className="kpi-sub">v{result.model_version}</div>
             </div>
           </div>
 
           {/* Historical vs Forecast Main Chart */}
-          <div className="chart-card" style={{ marginBottom: '24px' }}>
+          <div className="chart-card" style={{ marginBottom: '20px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <h3>
-                <span className="chart-icon">📈</span> Historical Baseline vs. Projected Demand
-              </h3>
+              <h3>Historical Demand & Predicted Trend</h3>
               <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
                 Historical Mean: <strong>{fmtCurrency(result.historical_summary.historical_mean_sales)}</strong>
               </span>
             </div>
 
-            <ResponsiveContainer width="100%" height={320}>
-              <LineChart data={chartData} margin={{ top: 10, right: 30, left: 10, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                <XAxis dataKey="week" stroke="#64748b" tick={{ fill: '#94a3b8', fontSize: 11 }} />
-                <YAxis stroke="#64748b" tick={{ fill: '#94a3b8', fontSize: 11 }} tickFormatter={(v) => fmtCurrency(v)} />
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={chartData} margin={{ top: 10, right: 20, left: 10, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#ECEAE4" vertical={false} />
+                <XAxis dataKey="week" stroke="#8A8882" tick={{ fill: '#66645F', fontSize: 11 }} />
+                <YAxis stroke="#8A8882" tick={{ fill: '#66645F', fontSize: 11 }} tickFormatter={(v) => fmtCurrency(v)} />
                 <Tooltip content={<CustomTooltip />} />
                 
-                {/* Historical Mean Reference Line */}
+                {/* Historical Mean Baseline */}
                 <ReferenceLine
                   y={result.historical_summary.historical_mean_sales}
-                  stroke="#f59e0b"
+                  stroke="#8A8882"
                   strokeDasharray="4 4"
-                  label={{ value: 'Historical Mean', fill: '#f59e0b', fontSize: 11, position: 'top' }}
+                  label={{ value: 'Historical Mean', fill: '#66645F', fontSize: 11, position: 'top' }}
                 />
 
-                {/* Forecast Starts Vertical Reference Line */}
+                {/* Forecast Starts Separator */}
                 <ReferenceLine
                   x={`${result.historical_summary.last_known_date} (Hist)`}
-                  stroke="#ec4899"
-                  strokeDasharray="3 3"
-                  label={{ value: 'Forecast Starts', fill: '#ec4899', fontSize: 11, position: 'insideTopLeft' }}
+                  stroke="#DDDAD3"
+                  strokeDasharray="2 2"
+                  label={{ value: 'Forecast Starts', fill: '#66645F', fontSize: 11, position: 'insideTopLeft' }}
                 />
 
                 <Line
                   type="monotone"
                   dataKey="predicted_sales"
                   name="Forecasted Sales"
-                  stroke="#3b82f6"
-                  strokeWidth={3}
-                  dot={{ r: 5, fill: '#3b82f6', stroke: '#111827', strokeWidth: 2 }}
-                  activeDot={{ r: 7 }}
+                  stroke="#2F5D50"
+                  strokeWidth={2.5}
+                  dot={{ r: 4, fill: '#2F5D50' }}
+                  activeDot={{ r: 6 }}
                 />
               </LineChart>
             </ResponsiveContainer>
           </div>
 
-          {/* Week-by-Week Predictions Table */}
-          <div className="glass-card" style={{ marginBottom: '24px' }}>
-            <h3 style={{ marginBottom: '16px', fontSize: '15px', fontWeight: 600 }}>
-              <span style={{ marginRight: '8px' }}>📋</span> Week-by-Week Forecast Schedule
+          {/* Week-by-Week Table */}
+          <div className="card" style={{ marginBottom: '20px' }}>
+            <h3 style={{ marginBottom: '14px', fontSize: '14px', fontWeight: 600 }}>
+              Forecast Schedule
             </h3>
             <table className="forecast-table">
               <thead>
@@ -269,8 +261,8 @@ export default function Forecast() {
                   <th>Step</th>
                   <th>Week Ending</th>
                   <th>Forecasted Sales</th>
-                  <th>Holiday Event</th>
-                  <th>Feature Context & Assumptions</th>
+                  <th>Holiday</th>
+                  <th>Feature Context</th>
                 </tr>
               </thead>
               <tbody>
@@ -278,18 +270,18 @@ export default function Forecast() {
                   <tr key={p.step}>
                     <td style={{ fontWeight: 600 }}>Step {p.step}</td>
                     <td>{p.week}</td>
-                    <td style={{ fontWeight: 700, color: 'var(--text-accent)' }}>
+                    <td style={{ fontWeight: 600, color: '#2F5D50' }}>
                       ${p.weekly_sales.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </td>
                     <td>
                       {p.is_holiday ? (
-                        <span className="holiday-badge">🎄 Holiday Week</span>
+                        <span className="holiday-badge">Holiday</span>
                       ) : (
                         <span style={{ color: 'var(--text-muted)' }}>Regular</span>
                       )}
                     </td>
                     <td style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>
-                      {p.assumptions.join('; ') || 'Continuous lag & rolling feature generation'}
+                      {p.assumptions.join('; ') || 'Continuous lag & rolling statistics roll'}
                     </td>
                   </tr>
                 ))}
@@ -297,16 +289,14 @@ export default function Forecast() {
             </table>
           </div>
 
-          {/* How this forecast works Section */}
-          <div className="glass-card" style={{ borderLeft: '4px solid var(--accent-primary)' }}>
-            <h3 style={{ fontSize: '14px', fontWeight: 600, color: 'var(--accent-primary)', marginBottom: '8px' }}>
-              💡 How This Forecast Works
-            </h3>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '13px', lineHeight: 1.65 }}>
-              RetailIQ uses historical weekly sales together with recursive lag patterns (1, 2, 4, 8, 13, 26, 52 weeks),
-              rolling window statistics (4, 8, 13-week mean and standard deviations), calendar information (week of year, holidays),
-              store characteristics (Type A/B/C, square footage), and available macroeconomic and promotional features (MarkDown1–5, fuel price, CPI, unemployment)
-              to estimate future weekly sales via the <strong>{result.model_type}</strong>.
+          {/* How this forecast works */}
+          <div className="card" style={{ background: 'var(--bg-card-secondary)', border: '1px solid var(--border-medium)' }}>
+            <h4 style={{ fontSize: '13px', fontWeight: 600, color: 'var(--accent-primary)', marginBottom: '6px' }}>
+              How This Forecast Works
+            </h4>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '12.5px', lineHeight: 1.6 }}>
+              RetailIQ uses historical weekly sales together with lag patterns, rolling statistics, calendar information,
+              store characteristics and available economic/promotional features to estimate future weekly sales via the <strong>{result.model_type}</strong>.
             </p>
           </div>
         </>
@@ -314,8 +304,7 @@ export default function Forecast() {
 
       {!result && !loading && !error && (
         <div className="empty-state">
-          <div className="empty-icon">🔮</div>
-          <p>Select a store and department above, then click <strong>Generate Forecast</strong> to project weekly demand.</p>
+          <p>Select a store and department above, then click <strong>Generate Forecast</strong> to project weekly sales.</p>
         </div>
       )}
     </div>

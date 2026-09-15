@@ -34,19 +34,19 @@ const MODEL_META = {
     { feature: 'sales_to_roll_mean_13', importance: 1388, desc: '13-Week Moving Window Ratio' },
     { feature: 'sales_to_roll_mean_4', importance: 1217, desc: '4-Week Short-Term Momentum' },
     { feature: 'lag_1', importance: 1033, desc: 'Previous Week Sales' },
-    { feature: 'fuel_price', importance: 1027, desc: 'Regional Macroeconomic Fuel Cost' },
+    { feature: 'fuel_price', importance: 1027, desc: 'Regional Fuel Price Index' },
     { feature: 'lag_2', importance: 782, desc: '2-Week Lag Sales' },
     { feature: 'lag_13', importance: 769, desc: 'Quarterly Seasonal Lag' }
   ]
 }
 
 const FEATURE_CATEGORIES = [
-  { name: 'Lag Features (1, 2, 4, 8, 13, 26, 52)', count: 7, color: '#3b82f6', desc: 'Captures short-term auto-regressive momentum and 52-week annual periodicity' },
-  { name: 'Rolling Window Stats (Mean, Std, Min, Max 4/8/13)', count: 14, color: '#8b5cf6', desc: 'Moving window central tendency and demand volatility' },
-  { name: 'Calendar & Seasonality (Week, Month, Quarter, Day)', count: 8, color: '#06b6d4', desc: 'Calendar cycles, month boundaries, and holiday flags' },
-  { name: 'Promotions & Markdowns (MD1-5, Total MD, Flags)', count: 7, color: '#f59e0b', desc: 'Promotional markdown activity and intensity' },
-  { name: 'Macroeconomic Drivers (CPI, Fuel, Unemployment, Temp)', count: 4, color: '#10b981', desc: 'External economic climate and weather seasonality' },
-  { name: 'Store Entity Embeddings (Type, Size, IDs)', count: 4, color: '#ec4899', desc: 'Store physical footprint and categorical classifications' }
+  { name: 'Lag Features (1, 2, 4, 8, 13, 26, 52)', count: 7, desc: 'Captures short-term auto-regressive momentum and 52-week annual periodicity' },
+  { name: 'Rolling Window Stats (Mean, Std, Min, Max 4/8/13)', count: 14, desc: 'Moving window central tendency and demand volatility' },
+  { name: 'Calendar & Seasonality (Week, Month, Quarter, Day)', count: 8, desc: 'Calendar cycles, month boundaries, and holiday flags' },
+  { name: 'Promotions & Markdowns (MD1-5, Total MD, Flags)', count: 7, desc: 'Promotional markdown activity and discount intensity' },
+  { name: 'Macroeconomic Drivers (CPI, Fuel, Unemployment, Temp)', count: 4, desc: 'External economic climate and weather seasonality' },
+  { name: 'Store Entity Embeddings (Type, Size, IDs)', count: 4, desc: 'Store physical footprint and categorical classifications' }
 ]
 
 const SCHEMA_TABLES = [
@@ -111,42 +111,38 @@ export default function Insights() {
     <div className="insights-page">
       <div className="page-header">
         <h2>Data Insights & Architecture</h2>
-        <p>Verified Model Metadata, 44-Feature Taxonomy, Star Schema Data Warehouse, and Store Network</p>
+        <p>Verified Model Metadata, 44-Feature Pipeline, Relational Star Schema, and Store Network</p>
       </div>
 
       {error && (
-        <div className="error-banner" style={{ marginBottom: '20px' }}>
-          <span>⚠️ {error}</span>
+        <div className="error-banner" style={{ marginBottom: '16px' }}>
+          <span>{error}</span>
         </div>
       )}
 
-      {/* 1. Dataset & Model Top-Level KPIs */}
+      {/* Dataset & Model Overview KPIs */}
       <div className="kpi-grid">
         <div className="kpi-card">
-          <span className="kpi-icon">📚</span>
           <div className="kpi-label">Observations</div>
           <div className="kpi-value">421,570</div>
           <div className="kpi-sub">143 Contiguous Weeks (2010–2012)</div>
         </div>
 
         <div className="kpi-card">
-          <span className="kpi-icon">🎯</span>
           <div className="kpi-label">Forecaster Engine</div>
           <div className="kpi-value" style={{ fontSize: '18px' }}>LightGBM GBDT</div>
-          <div className="kpi-sub">400 Trees • num_leaves=63</div>
+          <div className="kpi-sub">400 Trees · num_leaves=63</div>
         </div>
 
         <div className="kpi-card">
-          <span className="kpi-icon">📉</span>
           <div className="kpi-label">Holdout WMAE</div>
-          <div className="kpi-value" style={{ color: 'var(--accent-success)' }}>
+          <div className="kpi-value" style={{ color: 'var(--status-success)' }}>
             ${MODEL_META.holdout_evaluation.WMAE.toLocaleString()}
           </div>
-          <div className="kpi-sub">Weighted MAE on Test Set</div>
+          <div className="kpi-sub">Weighted MAE on test set</div>
         </div>
 
         <div className="kpi-card">
-          <span className="kpi-icon">📐</span>
           <div className="kpi-label">RMSE / MAE</div>
           <div className="kpi-value" style={{ fontSize: '18px' }}>
             ${MODEL_META.holdout_evaluation.RMSE.toLocaleString()}
@@ -155,39 +151,36 @@ export default function Insights() {
         </div>
 
         <div className="kpi-card">
-          <span className="kpi-icon">🔬</span>
-          <div className="kpi-label">Features Engine</div>
+          <div className="kpi-label">Features Count</div>
           <div className="kpi-value">{MODEL_META.features_count}</div>
-          <div className="kpi-sub">Exact 44-feature pipeline</div>
+          <div className="kpi-sub">Engineered feature pipeline</div>
         </div>
       </div>
 
-      {/* 2. Top Feature Importance & 44-Feature Taxonomy */}
+      {/* Feature Importance & Taxonomy */}
       <div className="chart-grid">
         <div className="chart-card">
-          <h3>
-            <span className="chart-icon">📊</span> Top 10 Feature Importance (Tree Splits)
-          </h3>
-          <ResponsiveContainer width="100%" height={320}>
+          <h3>Feature Importance (Tree Split Gain)</h3>
+          <ResponsiveContainer width="100%" height={300}>
             <BarChart
               data={MODEL_META.top_features}
               layout="vertical"
-              margin={{ top: 10, right: 30, left: 80, bottom: 5 }}
+              margin={{ top: 5, right: 20, left: 70, bottom: 5 }}
             >
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-              <XAxis type="number" stroke="#64748b" tick={{ fill: '#94a3b8', fontSize: 11 }} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#ECEAE4" horizontal={false} />
+              <XAxis type="number" stroke="#8A8882" tick={{ fill: '#66645F', fontSize: 11 }} />
               <YAxis
                 type="category"
                 dataKey="feature"
-                stroke="#64748b"
-                tick={{ fill: '#94a3b8', fontSize: 11 }}
+                stroke="#8A8882"
+                tick={{ fill: '#66645F', fontSize: 11 }}
               />
               <Tooltip
                 contentStyle={{
-                  backgroundColor: '#1e293b',
-                  borderColor: '#334155',
-                  borderRadius: '8px',
-                  color: '#f8fafc',
+                  backgroundColor: '#FFFFFF',
+                  borderColor: '#DDDAD3',
+                  borderRadius: '6px',
+                  color: '#1C1C1C',
                   fontSize: '12px'
                 }}
                 formatter={(val, name, item) => [
@@ -195,11 +188,11 @@ export default function Insights() {
                   'Importance'
                 ]}
               />
-              <Bar dataKey="importance" radius={[0, 6, 6, 0]}>
+              <Bar dataKey="importance" radius={[0, 4, 4, 0]}>
                 {MODEL_META.top_features.map((entry, index) => (
                   <Cell
                     key={`cell-${index}`}
-                    fill={index < 3 ? '#3b82f6' : index < 6 ? '#8b5cf6' : '#06b6d4'}
+                    fill={index < 3 ? '#2F5D50' : index < 6 ? '#5A7C71' : '#8A9E96'}
                   />
                 ))}
               </Bar>
@@ -208,18 +201,16 @@ export default function Insights() {
         </div>
 
         <div className="chart-card">
-          <h3>
-            <span className="chart-icon">🧠</span> Feature Engineering Pipeline (44 Features)
-          </h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '6px' }}>
+          <h3>Feature Pipeline Structure (44 Features)</h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '4px' }}>
             {FEATURE_CATEGORIES.map((cat, idx) => (
               <div
                 key={idx}
                 style={{
-                  padding: '10px 14px',
-                  background: 'rgba(30, 41, 59, 0.5)',
-                  borderRadius: 'var(--radius-sm)',
-                  borderLeft: `4px solid ${cat.color}`
+                  padding: '9px 12px',
+                  background: 'var(--bg-card-secondary)',
+                  borderRadius: '6px',
+                  border: '1px solid var(--border-subtle)'
                 }}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
@@ -228,7 +219,7 @@ export default function Insights() {
                   </span>
                   <span
                     className="feature-chip"
-                    style={{ background: `${cat.color}20`, borderColor: `${cat.color}40`, color: cat.color }}
+                    style={{ background: '#FFFFFF', fontSize: '11px', padding: '1px 6px' }}
                   >
                     {cat.count} features
                   </span>
@@ -242,13 +233,13 @@ export default function Insights() {
         </div>
       </div>
 
-      {/* 3. Star Schema Data Warehouse Inspection */}
-      <div className="chart-card" style={{ marginBottom: '24px' }}>
-        <h3>
-          <span className="chart-icon">🗄️</span> SQLite Analytical Star Schema Architecture (`retailiq.db`)
+      {/* Star Schema Data Warehouse Architecture */}
+      <div className="card" style={{ marginBottom: '20px' }}>
+        <h3 style={{ marginBottom: '6px', fontSize: '15px', fontWeight: 600 }}>
+          SQLite Star Schema Architecture (retailiq.db)
         </h3>
         <p style={{ color: 'var(--text-secondary)', fontSize: '13px', marginBottom: '16px' }}>
-          Organized with a central <code>fact_sales</code> fact table and 3 dimensional tables (<code>dim_store</code>, <code>dim_dept</code>, <code>dim_date</code>). Indexed with B-Tree composite keys for sub-millisecond query execution.
+          Dimensional model featuring a centralized <code>fact_sales</code> fact table and 3 dimension tables, indexed on composite keys for fast aggregations.
         </p>
         <div style={{ overflowX: 'auto' }}>
           <table className="insights-table">
@@ -256,7 +247,7 @@ export default function Insights() {
               <tr>
                 <th>Table Name</th>
                 <th>Classification</th>
-                <th>Rows / Records</th>
+                <th>Row Count</th>
                 <th>Schema Definition</th>
                 <th>Business Description</th>
               </tr>
@@ -264,15 +255,15 @@ export default function Insights() {
             <tbody>
               {SCHEMA_TABLES.map((table, idx) => (
                 <tr key={idx}>
-                  <td style={{ fontWeight: 700, color: 'var(--text-accent)' }}>
+                  <td style={{ fontWeight: 600, color: 'var(--accent-primary)' }}>
                     <code>{table.name}</code>
                   </td>
                   <td>
                     <span
                       className="type-badge"
                       style={{
-                        background: table.type.includes('Fact') ? 'rgba(59, 130, 246, 0.15)' : 'rgba(16, 185, 129, 0.15)',
-                        color: table.type.includes('Fact') ? '#60a5fa' : '#34d399'
+                        background: table.type.includes('Fact') ? '#E8EFEA' : '#EDF4F2',
+                        color: table.type.includes('Fact') ? '#2F5D50' : '#406E61'
                       }}
                     >
                       {table.type}
@@ -280,7 +271,7 @@ export default function Insights() {
                   </td>
                   <td style={{ fontWeight: 600 }}>{table.rows}</td>
                   <td>
-                    <code style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>{table.cols}</code>
+                    <code style={{ fontSize: '11.5px', color: 'var(--text-secondary)' }}>{table.cols}</code>
                   </td>
                   <td style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>{table.desc}</td>
                 </tr>
@@ -290,21 +281,23 @@ export default function Insights() {
         </div>
       </div>
 
-      {/* 4. Store Master Directory */}
-      <div className="chart-card">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
-          <h3>
-            <span className="chart-icon">🏪</span> Store Network Directory (45 Stores)
+      {/* Store Master Directory */}
+      <div className="card">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '10px' }}>
+          <h3 style={{ fontSize: '15px', fontWeight: 600 }}>
+            Store Directory (45 Stores)
           </h3>
-          <div style={{ display: 'flex', gap: '8px' }}>
+          <div style={{ display: 'flex', gap: '6px' }}>
             {['ALL', 'A', 'B', 'C'].map((type) => (
               <button
                 key={type}
-                className="feature-chip"
+                className="btn-secondary"
                 style={{
-                  cursor: 'pointer',
-                  background: storeFilter === type ? 'var(--accent-primary)' : 'rgba(59, 130, 246, 0.1)',
-                  color: storeFilter === type ? '#ffffff' : 'var(--text-accent)',
+                  padding: '4px 10px',
+                  fontSize: '12px',
+                  background: storeFilter === type ? 'var(--accent-primary)' : 'var(--bg-card)',
+                  color: storeFilter === type ? '#FFFFFF' : 'var(--text-secondary)',
+                  borderColor: storeFilter === type ? 'var(--accent-primary)' : 'var(--border-medium)',
                   fontWeight: 600
                 }}
                 onClick={() => setStoreFilter(type)}
@@ -321,21 +314,21 @@ export default function Insights() {
             <div className="loading-text">Loading store directory...</div>
           </div>
         ) : (
-          <div style={{ maxHeight: '380px', overflowY: 'auto' }}>
+          <div style={{ maxHeight: '360px', overflowY: 'auto' }}>
             <table className="insights-table">
               <thead>
                 <tr>
                   <th>Store #</th>
                   <th>Store Type</th>
                   <th>Footprint (Sq Ft)</th>
-                  <th>Scale Indicator</th>
-                  <th>Classification Profile</th>
+                  <th>Scale</th>
+                  <th>Format Description</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredStores.map((s) => (
                   <tr key={s.store_id}>
-                    <td style={{ fontWeight: 700 }}>Store {s.store_id}</td>
+                    <td style={{ fontWeight: 600 }}>Store {s.store_id}</td>
                     <td>
                       <span className={`type-badge type-${(s.store_type || 'A').toLowerCase()}`}>
                         Type {s.store_type}
@@ -345,13 +338,13 @@ export default function Insights() {
                       {Number(s.store_size || s.size || 0).toLocaleString()} sqft
                     </td>
                     <td>
-                      <div style={{ width: '120px', height: '6px', background: 'rgba(255,255,255,0.1)', borderRadius: '3px', overflow: 'hidden' }}>
+                      <div style={{ width: '100px', height: '5px', background: 'var(--border-subtle)', borderRadius: '3px', overflow: 'hidden' }}>
                         <div
                           style={{
                             height: '100%',
                             width: `${Math.min(100, Math.round((Number(s.store_size || s.size || 0) / 220000) * 100))}%`,
                             background:
-                              s.store_type === 'A' ? '#3b82f6' : s.store_type === 'B' ? '#10b981' : '#f59e0b'
+                              s.store_type === 'A' ? '#2F5D50' : s.store_type === 'B' ? '#5A7C71' : '#8C7D68'
                           }}
                         />
                       </div>

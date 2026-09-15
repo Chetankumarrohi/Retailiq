@@ -19,13 +19,6 @@ const TOOL_DISPLAY_NAMES = {
   knowledge_guardrail: 'Knowledge Guardrail'
 }
 
-const TOOL_ICONS = {
-  sql_analytics_tool: '🗄️',
-  forecast_tool: '📈',
-  retrieval_tool: '📄',
-  knowledge_guardrail: '🛡️'
-}
-
 export default function Assistant() {
   const [messages, setMessages] = useState([
     {
@@ -112,19 +105,19 @@ export default function Assistant() {
     <div className="assistant-page">
       <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
-          <h2>RetailIQ Business Assistant</h2>
+          <h2>Business Assistant</h2>
           <p>Ask questions about historical sales, future demand and internal retail policies.</p>
         </div>
         <button
-          className="btn-primary"
-          style={{ background: 'rgba(239, 68, 68, 0.15)', color: '#f87171', border: '1px solid rgba(239, 68, 68, 0.3)', padding: '6px 14px', fontSize: '12px' }}
+          className="btn-secondary"
+          style={{ padding: '6px 12px', fontSize: '12px' }}
           onClick={() => {
             setMessages([messages[0]])
             setActiveTrace(null)
             setActiveSources([])
           }}
         >
-          🧹 Reset Chat
+          Reset Conversation
         </button>
       </div>
 
@@ -149,19 +142,20 @@ export default function Assistant() {
                   )}
 
                   {msg.tools_used && msg.tools_used.length > 0 && (
-                    <div style={{ marginTop: '12px', display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                    <div style={{ marginTop: '10px', display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                       {msg.tools_used.map((tool, idx) => (
                         <span
                           key={idx}
                           className="feature-chip"
                           style={{
-                            background: 'rgba(59, 130, 246, 0.15)',
-                            borderColor: 'rgba(59, 130, 246, 0.3)',
+                            background: '#E8EFEA',
+                            borderColor: '#C7D8CF',
+                            color: '#2F5D50',
                             fontSize: '11px',
-                            padding: '2px 8px'
+                            padding: '2px 7px'
                           }}
                         >
-                          {TOOL_ICONS[tool] || '⚙️'} {TOOL_DISPLAY_NAMES[tool] || tool}
+                          {TOOL_DISPLAY_NAMES[tool] || tool}
                         </span>
                       ))}
                     </div>
@@ -175,10 +169,10 @@ export default function Assistant() {
 
             {loading && (
               <div className="chat-msg assistant">
-                <div className="msg-bubble" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <div className="spinner" style={{ width: '18px', height: '18px', borderWidth: '2px' }} />
+                <div className="msg-bubble" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div className="spinner" style={{ width: '16px', height: '16px', borderWidth: '2px' }} />
                   <span style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>
-                    Agent is planning & executing tools...
+                    Reasoning & querying tools...
                   </span>
                 </div>
               </div>
@@ -199,7 +193,7 @@ export default function Assistant() {
           <div className="chat-input-area">
             <input
               type="text"
-              placeholder="Ask a question about sales, forecasting, or policies..."
+              placeholder="Ask a question about sales, demand forecasting, or retail policies..."
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => {
@@ -215,7 +209,7 @@ export default function Assistant() {
               onClick={() => handleSend()}
               disabled={loading || !input.trim()}
             >
-              {loading ? 'Thinking...' : 'Send'}
+              {loading ? 'Processing...' : 'Send'}
             </button>
           </div>
         </div>
@@ -224,13 +218,12 @@ export default function Assistant() {
         <div className="trace-panel">
           {/* Tool Execution Trace */}
           <div className="trace-section">
-            <h4>⚙️ How RetailIQ Answered</h4>
+            <h4>HOW RETAILIQ ANSWERED</h4>
             {activeTrace && activeTrace.length > 0 ? (
               activeTrace.map((step, idx) => (
                 <div key={idx} className="trace-step">
                   <div className="trace-tool">
-                    <span>{TOOL_ICONS[step.tool] || '🔧'}</span>
-                    <span>Step {step.step || idx + 1} — {TOOL_DISPLAY_NAMES[step.tool] || step.tool}</span>
+                    Step {step.step || idx + 1} · {TOOL_DISPLAY_NAMES[step.tool] || step.tool}
                   </div>
                   <div className="trace-reason">{step.reason}</div>
                   {step.output_summary && (
@@ -241,7 +234,7 @@ export default function Assistant() {
                 </div>
               ))
             ) : (
-              <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontStyle: 'italic', padding: '6px 0' }}>
+              <div style={{ fontSize: '12px', color: 'var(--text-muted)', padding: '4px 0' }}>
                 Tool execution traces (SQL Analytics, Forecast Model, Policy Retrieval) will appear here.
               </div>
             )}
@@ -249,24 +242,24 @@ export default function Assistant() {
 
           {/* Policy Citations */}
           <div className="trace-section">
-            <h4>📄 Policy Citations</h4>
+            <h4>DOCUMENT CITATIONS</h4>
             {activeSources && activeSources.length > 0 ? (
               <>
                 {activeSources.map((source, idx) => (
                   <div key={idx} className="citation-item">
                     <div className="citation-section">
-                      📌 Source: {source.document} — Section {source.section}
+                      Source: {source.document} · Section {source.section}
                     </div>
                     <div className="citation-snippet">{source.snippet}</div>
                   </div>
                 ))}
-                <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontStyle: 'italic', marginTop: '10px' }}>
-                  *Note: policy_docs.txt is synthetic project demonstration documentation.*
+                <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '8px' }}>
+                  Note: policy_docs.txt is synthetic project demonstration documentation.
                 </div>
               </>
             ) : (
-              <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontStyle: 'italic', padding: '6px 0' }}>
-                Grounded policy citations and synthetic documentation sources appear here.
+              <div style={{ fontSize: '12px', color: 'var(--text-muted)', padding: '4px 0' }}>
+                Grounded policy citations and synthetic documentation references appear here.
               </div>
             )}
           </div>
