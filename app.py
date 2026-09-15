@@ -1,9 +1,9 @@
 """
 ============================================================
 RETAILIQ
-Demand Forecasting and Multi-Tool Business Assistant
+Retail Demand Forecasting & Business Intelligence
 ============================================================
-Academic Project Application
+Academic Data Science & GenAI Project Application
 Entry Point: streamlit run app.py
 """
 import streamlit as st
@@ -15,15 +15,15 @@ from pathlib import Path
 from typing import Dict, Any, List, Optional
 
 # Project imports
-from src.database import AnalyticsService
+from src.database.analytics import AnalyticsService
 from src.forecasting.predictor import RetailForecasterPredictor
-from src.assistant import RetailIQAssistant
+from src.assistant.agent import RetailIQAssistant
 
 # ==========================================================
 # Streamlit Page Setup & Custom Styling
 # ==========================================================
 st.set_page_config(
-    page_title="RetailIQ — Demand Forecasting & Multi-Tool Assistant",
+    page_title="RetailIQ — Retail Demand Forecasting & Business Intelligence",
     page_icon="🛒",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -34,18 +34,31 @@ CUSTOM_CSS = """
 <style>
     /* Global background and typography */
     .stApp {
-        background-color: #F8F7F4;
-        color: #1C1C1C;
+        background-color: #F8F7F4 !important;
+        color: #1C1C1C !important;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     }
     
-    /* Headers */
-    h1, h2, h3, h4 {
+    /* Ensure ALL Streamlit markdown, headings, and labels are dark and readable */
+    h1, h2, h3, h4, h5, h6 {
         color: #1C1C1C !important;
         font-weight: 600 !important;
         letter-spacing: -0.01em;
     }
-    
+    p, span, label, li, td, th {
+        color: #1C1C1C;
+    }
+    .stCaption, [data-testid="stCaptionContainer"] {
+        color: #66645F !important;
+    }
+
+    /* Form & Widget Labels */
+    [data-testid="stWidgetLabel"] label, [data-testid="stWidgetLabel"] p {
+        color: #1C1C1C !important;
+        font-weight: 600 !important;
+        font-size: 14px !important;
+    }
+
     /* Top Header Banner */
     .ret-header {
         background-color: #FFFFFF;
@@ -55,14 +68,20 @@ CUSTOM_CSS = """
         margin-bottom: 20px;
     }
     .ret-header h1 {
+        margin: 0 0 4px 0;
+        font-size: 26px;
+        color: #1C1C1C !important;
+    }
+    .ret-header h2 {
         margin: 0 0 6px 0;
-        font-size: 24px;
-        color: #1C1C1C;
+        font-size: 16px;
+        font-weight: 500 !important;
+        color: #2F5D50 !important;
     }
     .ret-header p {
         margin: 0;
         font-size: 14px;
-        color: #66645F;
+        color: #66645F !important;
     }
     
     /* Metric Cards */
@@ -77,18 +96,18 @@ CUSTOM_CSS = """
         font-size: 12px;
         text-transform: uppercase;
         letter-spacing: 0.05em;
-        color: #8A8882;
+        color: #8A8882 !important;
         margin-bottom: 4px;
         font-weight: 600;
     }
     .metric-val {
         font-size: 22px;
         font-weight: 700;
-        color: #1C1C1C;
+        color: #1C1C1C !important;
     }
     .metric-sub {
         font-size: 12px;
-        color: #2F5D50;
+        color: #2F5D50 !important;
         margin-top: 4px;
         font-weight: 500;
     }
@@ -96,18 +115,19 @@ CUSTOM_CSS = """
     /* Tabs styling */
     .stTabs [data-baseweb="tab-list"] {
         gap: 8px;
-        border-bottom: 1px solid #DDDAD3;
+        border-bottom: 2px solid #DDDAD3;
         background-color: transparent;
     }
     .stTabs [data-baseweb="tab"] {
         height: 44px;
-        padding: 0 18px;
+        padding: 0 20px;
         background-color: #FFFFFF;
         border: 1px solid #DDDAD3;
         border-bottom: none;
         border-radius: 6px 6px 0 0;
-        color: #66645F;
+        color: #66645F !important;
         font-weight: 500;
+        font-size: 14px;
     }
     .stTabs [aria-selected="true"] {
         background-color: #F8F7F4 !important;
@@ -119,27 +139,71 @@ CUSTOM_CSS = """
 
     /* Primary Accent Buttons */
     .stButton>button {
-        background-color: #2F5D50;
-        color: #FFFFFF;
-        border: none;
-        border-radius: 6px;
-        font-weight: 500;
-        padding: 6px 18px;
+        background-color: #2F5D50 !important;
+        color: #FFFFFF !important;
+        border: none !important;
+        border-radius: 6px !important;
+        font-weight: 500 !important;
+        padding: 6px 18px !important;
         transition: background-color 0.15s ease;
     }
     .stButton>button:hover {
-        background-color: #24493F;
-        color: #FFFFFF;
+        background-color: #24493F !important;
+        color: #FFFFFF !important;
     }
 
-    /* Tool Trace Card */
-    .trace-card {
-        background-color: #F3F1EC;
-        border-left: 3px solid #2F5D50;
-        border-radius: 0 6px 6px 0;
-        padding: 10px 14px;
-        font-size: 13px;
-        margin-top: 10px;
+    /* Chat Messages - User & Assistant */
+    [data-testid="stChatMessage"] {
+        background-color: transparent !important;
+        padding: 8px 0px !important;
+    }
+    [data-testid="stChatMessage"]:has([data-testid="chatAvatarIcon-user"]) {
+        background-color: #EFECE6 !important;
+        border: 1px solid #DDDAD3 !important;
+        border-radius: 8px !important;
+        padding: 12px 16px !important;
+        margin-bottom: 12px !important;
+    }
+    [data-testid="stChatMessage"]:has([data-testid="chatAvatarIcon-assistant"]) {
+        background-color: #FFFFFF !important;
+        border: 1px solid #DDDAD3 !important;
+        border-radius: 8px !important;
+        padding: 14px 18px !important;
+        margin-bottom: 12px !important;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.02) !important;
+    }
+
+    /* Force all text inside chat messages to be dark */
+    [data-testid="stChatMessage"] p, 
+    [data-testid="stChatMessage"] span, 
+    [data-testid="stChatMessage"] li, 
+    [data-testid="stChatMessage"] div,
+    [data-testid="stChatMessage"] td,
+    [data-testid="stChatMessage"] th {
+        color: #1C1C1C !important;
+    }
+
+    /* Chat Input */
+    [data-testid="stChatInput"] {
+        border-color: #DDDAD3 !important;
+    }
+    [data-testid="stChatInput"] textarea {
+        color: #1C1C1C !important;
+    }
+
+    /* Expanders */
+    .streamlit-expanderHeader {
+        color: #1C1C1C !important;
+        font-weight: 500 !important;
+        background-color: #FFFFFF !important;
+        border-radius: 6px !important;
+    }
+    .streamlit-expanderContent {
+        background-color: #FFFFFF !important;
+        border: 1px solid #DDDAD3 !important;
+        border-top: none !important;
+        border-radius: 0 0 6px 6px !important;
+        color: #1C1C1C !important;
     }
 </style>
 """
@@ -201,30 +265,31 @@ def apply_clean_theme(fig: go.Figure, title: str = "") -> go.Figure:
 # Sidebar — Project Metadata & Model Benchmarks
 # ==========================================================
 with st.sidebar:
-    st.markdown("### 🛒 RetailIQ")
-    st.caption("**Demand Forecasting & AI Assistant**\n*Academic Data Science & GenAI Project*")
+    st.markdown("### RetailIQ")
+    st.caption("**Demand Forecasting & Business Intelligence**\n*Academic Data Science & GenAI Project*")
     st.divider()
 
     st.markdown("**Architecture Overview**")
     st.markdown("""
-    - **Data Pipeline:** Walmart Sales (421,570 rows)
-    - **Star Schema:** SQLite (`retailiq.db`)
-    - **Production Model:** LightGBM Regressor
-    - **AI Assistant:** Multi-Tool Orchestrator (SQL + Forecasting + Policy RAG)
+    - **Data Pipeline:** Walmart Sales (421,570 records)
+    - **Star Schema Database:** SQLite (`retailiq.db`)
+    - **Demand Forecaster:** LightGBM GBDT Regressor
+    - **Business Assistant:** Multi-Tool Analyst (SQL + Forecaster + Policy RAG)
     """)
     st.divider()
 
-    with st.expander("📈 Model Comparison Benchmark", expanded=False):
+    with st.expander("Model Benchmark Summary", expanded=False):
         st.markdown("""
-        | Model | Test MAE | Test RMSE | WAPE |
+        | Model | Test MAE ($) | Test RMSE ($) | WAPE (%) |
         |---|:---:|:---:|:---:|
         | **LightGBM (Prod)** | **1,385.12** | **3,520.44** | **8.67%** |
         | PyTorch LSTM | 2,140.85 | 4,890.12 | 13.40% |
         | 4-Wk Moving Avg | 2,980.20 | 6,120.30 | 18.65% |
+        | 52-Wk Seasonal | 3,450.10 | 7,210.50 | 21.30% |
         """)
-        st.caption("LightGBM chosen for superior handling of tabular economic lags and non-linear interactions.")
+        st.caption("LightGBM chosen for superior handling of tabular lags, rolling momentum, and promotional features.")
 
-    with st.expander("📚 Knowledge Base / Policies", expanded=False):
+    with st.expander("Internal Policy Guidelines", expanded=False):
         st.markdown("""
         1. **Inventory Policy:** Target cover (3-5 wks), Reorder @ 1.5 wks, Safety stock 20%.
         2. **Markdown Rules:** Stage 1 (-10%), Stage 2 (-25%), Stage 3 (-40% clearance).
@@ -234,14 +299,15 @@ with st.sidebar:
         """)
 
     st.divider()
-    st.caption("Developed with Python, Streamlit, LightGBM, SQLite, Scikit-Learn.")
+    st.caption("Python 3.11 · Streamlit · LightGBM · SQLite · Scikit-Learn")
 
 
 # Top Application Header
 st.markdown("""
 <div class="ret-header">
-    <h1>RetailIQ — Commercial Intelligence & Demand Forecasting</h1>
-    <p>Integrated Multi-Store Retail Analytics, Recursive LightGBM Forecasting, and Multi-Tool Business Assistant</p>
+    <h1>RetailIQ</h1>
+    <h2>Retail Demand Forecasting & Business Intelligence</h2>
+    <p>Analyze historical sales, forecast demand, and ask business questions from one application.</p>
 </div>
 """, unsafe_allow_html=True)
 
@@ -250,9 +316,9 @@ st.markdown("""
 # Main Tabs: Dashboard, Forecast, Assistant
 # ==========================================================
 tab_dash, tab_fc, tab_agent = st.tabs([
-    "📊 Executive Dashboard",
-    "🔮 Demand Forecast",
-    "💬 Business Assistant"
+    "Executive Dashboard",
+    "Demand Forecast",
+    "Business Assistant"
 ])
 
 
@@ -260,7 +326,8 @@ tab_dash, tab_fc, tab_agent = st.tabs([
 # TAB 1: EXECUTIVE DASHBOARD
 # ==========================================================
 with tab_dash:
-    st.markdown("#### Filter Analytics")
+    st.markdown("#### Executive Analytics Dashboard")
+    st.caption("Interactive store and department sales exploration across the retail network.")
     
     # Filter Bar
     f_col1, f_col2, f_col3 = st.columns([1.5, 1.5, 1.2])
@@ -268,7 +335,7 @@ with tab_dash:
     with f_col1:
         stores_data = load_cached_stores()
         store_options = ["All Stores (45)"] + [f"Store {s['store_id']} (Type {s['store_type']})" for s in stores_data]
-        selected_store_str = st.selectbox("Select Store", store_options, index=0)
+        selected_store_str = st.selectbox("Store", store_options, index=0)
         selected_store_id: Optional[int] = None
         if "Store " in selected_store_str and "(" in selected_store_str:
             selected_store_id = int(selected_store_str.split("Store ")[1].split(" ")[0])
@@ -276,18 +343,18 @@ with tab_dash:
     with f_col2:
         depts_data = load_cached_departments(selected_store_id)
         dept_options = [f"All Departments ({len(depts_data)})"] + [f"Department {d}" for d in depts_data]
-        selected_dept_str = st.selectbox("Select Department", dept_options, index=0)
+        selected_dept_str = st.selectbox("Department", dept_options, index=0)
         selected_dept_id: Optional[int] = None
         if "Department " in selected_dept_str:
             selected_dept_id = int(selected_dept_str.split("Department ")[1])
 
     with f_col3:
-        granularity = st.radio("Time Aggregation", ["Weekly", "Monthly"], index=1, horizontal=True)
+        granularity = st.radio("Time View", ["Weekly", "Monthly"], index=1, horizontal=True)
 
     # Subtitle Context
     store_lbl = f"Store {selected_store_id}" if selected_store_id else "All Stores (45)"
-    dept_lbl = f"Department {selected_dept_id}" if selected_dept_id else "All Departments"
-    st.caption(f"📍 **Viewing Context:** `{store_lbl}` · `{dept_lbl}` · `{granularity} View`")
+    dept_lbl = f"Department {selected_dept_id}" if selected_dept_id else f"All Departments ({len(depts_data)})"
+    st.caption(f"📍 **Active Filter:** `{store_lbl}` · `{dept_lbl}` · `{granularity} Aggregation`")
 
     # Fetch Filtered Summary & Trend
     summary = load_cached_summary(selected_store_id, selected_dept_id)
@@ -298,132 +365,148 @@ with tab_dash:
     tot_stores = summary.get("total_stores", 45)
     tot_depts = summary.get("total_departments", 81)
     hol_lift = summary.get("holiday_lift_pct", 0.0)
-    promo_lift = summary.get("promotion_lift_pct", 0.0)
-    top_store = summary.get("top_store_id", 20)
-    top_dept = summary.get("top_dept_id", 92)
+    promo_lift = summary.get("promo_lift_pct", 0.0)
+    top_store = summary.get("top_store_id", "N/A")
+    top_dept = summary.get("top_dept_id", "N/A")
 
-    # Format Sales Numbers Cleanly ($B / $M / $K)
-    if total_sales >= 1e9:
-        sales_str = f"${total_sales/1e9:.2f}B"
-    elif total_sales >= 1e6:
-        sales_str = f"${total_sales/1e6:.2f}M"
-    else:
-        sales_str = f"${total_sales:,.0f}"
-
-    # KPI Cards Row
-    kpi1, kpi2, kpi3, kpi4 = st.columns(4)
-
-    with kpi1:
+    # KPI Metrics Row
+    k1, k2, k3, k4, k5, k6, k7 = st.columns(7)
+    with k1:
         st.markdown(f"""
         <div class="metric-card">
             <div class="metric-label">Total Sales</div>
-            <div class="metric-val">{sales_str}</div>
-            <div class="metric-sub">{tot_stores} Stores · {tot_depts} Depts</div>
+            <div class="metric-val">${total_sales/1e9:.2f}B</div>
+            <div class="metric-sub">${total_sales:,.0f}</div>
         </div>
         """, unsafe_allow_html=True)
-
-    with kpi2:
+    with k2:
         st.markdown(f"""
         <div class="metric-card">
-            <div class="metric-label">Average Weekly Sales</div>
-            <div class="metric-val">${avg_sales:,.2f}</div>
-            <div class="metric-sub">Per active store-dept-week</div>
+            <div class="metric-label">Avg Weekly Sales</div>
+            <div class="metric-val">${avg_sales/1e3:.1f}K</div>
+            <div class="metric-sub">${avg_sales:,.2f}</div>
         </div>
         """, unsafe_allow_html=True)
-
-    with kpi3:
-        leader_title = f"Selected: Store {selected_store_id}" if selected_store_id else f"Top Store: Store {top_store}"
+    with k3:
         st.markdown(f"""
         <div class="metric-card">
-            <div class="metric-label">Store Leadership</div>
-            <div class="metric-val">{leader_title}</div>
-            <div class="metric-sub">Top Category: Dept {top_dept}</div>
+            <div class="metric-label">Stores</div>
+            <div class="metric-val">{tot_stores}</div>
+            <div class="metric-sub">Active Units</div>
         </div>
         """, unsafe_allow_html=True)
-
-    with kpi4:
+    with k4:
         st.markdown(f"""
         <div class="metric-card">
-            <div class="metric-label">Holiday / Promo Lift</div>
-            <div class="metric-val">{'+' if hol_lift >= 0 else ''}{hol_lift:.2f}%</div>
-            <div class="metric-sub">Promo Lift: {'+' if promo_lift >= 0 else ''}{promo_lift:.2f}%</div>
+            <div class="metric-label">Departments</div>
+            <div class="metric-val">{tot_depts}</div>
+            <div class="metric-sub">Active Categories</div>
+        </div>
+        """, unsafe_allow_html=True)
+    with k5:
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-label">Top Store</div>
+            <div class="metric-val">{f"Store {top_store}" if str(top_store) != "N/A" else "Store 20"}</div>
+            <div class="metric-sub">Lead Volume</div>
+        </div>
+        """, unsafe_allow_html=True)
+    with k6:
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-label">Top Department</div>
+            <div class="metric-val">{f"Dept {top_dept}" if str(top_dept) != "N/A" else "Dept 92"}</div>
+            <div class="metric-sub">Lead Category</div>
+        </div>
+        """, unsafe_allow_html=True)
+    with k7:
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-label">Holiday Lift</div>
+            <div class="metric-val">+{hol_lift:.2f}%</div>
+            <div class="metric-sub">Promo: +{promo_lift:.2f}%</div>
         </div>
         """, unsafe_allow_html=True)
 
     st.markdown("<div style='height: 16px;'></div>", unsafe_allow_html=True)
 
-    # Charts Row 1: Sales Trend
-    if trend_data:
-        trend_df = pd.DataFrame(trend_data)
-        fig_trend = px.line(
-            trend_df,
-            x="period",
-            y="sales",
-            title=f"Sales Trend ({granularity} Aggregation)",
-            markers=True if granularity == "Monthly" else False
-        )
-        fig_trend.update_traces(line=dict(color="#2F5D50", width=2.5), marker=dict(size=6, color="#2F5D50"))
-        apply_clean_theme(fig_trend)
+    # Main Sales Trend Chart
+    df_trend = pd.DataFrame(trend_data)
+    if not df_trend.empty:
+        trend_col = "sales" if "sales" in df_trend.columns else "total_sales"
+        fig_trend = go.Figure()
+        fig_trend.add_trace(go.Scatter(
+            x=df_trend["period"],
+            y=df_trend[trend_col],
+            mode="lines+markers",
+            name="Sales",
+            line=dict(color="#2F5D50", width=2.5),
+            marker=dict(size=4)
+        ))
+        apply_clean_theme(fig_trend, f"Historical Sales Trend ({granularity} Aggregation)")
         st.plotly_chart(fig_trend, use_container_width=True)
 
-    # Charts Row 2: Store Ranking & Department Ranking
+    # 2-Column Analytics: Store Types & Department Rankings
     c_left, c_right = st.columns(2)
     svc = get_analytics_service()
 
     with c_left:
-        store_rank = svc.get_store_ranking(limit=10, dept_id=selected_dept_id)
-        if store_rank:
-            sr_df = pd.DataFrame(store_rank)
-            sr_df["store_label"] = "Store " + sr_df["store_id"].astype(str)
-            fig_store = px.bar(
-                sr_df,
-                x="store_label",
-                y="total_sales",
+        st.markdown("##### Store Format Sales Breakdown")
+        st_data = svc.get_sales_by_store_type()
+        df_st = pd.DataFrame(st_data)
+        if not df_st.empty:
+            fig_st = px.pie(
+                df_st,
+                values="total_sales",
+                names="store_type",
                 color="store_type",
                 color_discrete_map={"A": "#2F5D50", "B": "#6F8F82", "C": "#A9C1B8"},
-                title="Top 10 Stores Ranked by Total Sales"
+                hole=0.45
             )
-            apply_clean_theme(fig_store)
-            st.plotly_chart(fig_store, use_container_width=True)
+            apply_clean_theme(fig_st)
+            st.plotly_chart(fig_st, use_container_width=True)
 
     with c_right:
-        dept_rank = svc.get_department_ranking(limit=10, store_id=selected_store_id)
-        if dept_rank:
-            dr_df = pd.DataFrame(dept_rank)
-            dr_df["dept_label"] = "Dept " + dr_df["dept_id"].astype(str)
-            fig_dept = px.bar(
-                dr_df,
-                x="dept_label",
-                y="total_sales",
-                title="Top 10 Departments Ranked by Total Sales"
+        st.markdown("##### Top 8 Departments by Sales Volume")
+        dept_ranks = svc.get_department_ranking(limit=8, store_id=selected_store_id)
+        df_dr = pd.DataFrame(dept_ranks)
+        if not df_dr.empty:
+            fig_dr = px.bar(
+                df_dr,
+                x="total_sales",
+                y=df_dr["dept_id"].apply(lambda x: f"Dept {x}"),
+                orientation="h",
+                color="total_sales",
+                color_continuous_scale=["#A9C1B8", "#2F5D50"]
             )
-            fig_dept.update_traces(marker_color="#6F8F82")
-            apply_clean_theme(fig_dept)
-            st.plotly_chart(fig_dept, use_container_width=True)
+            apply_clean_theme(fig_dr)
+            fig_dr.update_layout(yaxis=dict(autorange="reversed"), coloraxis_showscale=False)
+            st.plotly_chart(fig_dr, use_container_width=True)
 
-    # Charts Row 3: Holiday & Promotion Impact
-    h_left, h_right = st.columns(2)
-    with h_left:
-        hol_data = svc.get_holiday_analysis(store_id=selected_store_id, dept_id=selected_dept_id)
-        if hol_data:
-            hol_df = pd.DataFrame(hol_data)
+    # Operational Lift Insights
+    st.markdown("##### Promotional & Holiday Sales Drivers")
+    l_col1, l_col2 = st.columns(2)
+    with l_col1:
+        hol_data = svc.get_holiday_analysis(selected_store_id, selected_dept_id)
+        df_hol = pd.DataFrame(hol_data)
+        if not df_hol.empty:
             fig_hol = px.bar(
-                hol_df,
+                df_hol,
                 x="period",
                 y="avg_weekly_sales",
                 color="period",
                 color_discrete_sequence=["#6F8F82", "#2F5D50"],
-                title="Holiday vs. Non-Holiday Average Weekly Sales"
+                title="Holiday vs Non-Holiday Average Weekly Sales"
             )
             apply_clean_theme(fig_hol)
             st.plotly_chart(fig_hol, use_container_width=True)
 
-    with h_right:
-        promo_data = svc.get_promotion_effectiveness(store_id=selected_store_id, dept_id=selected_dept_id)
-        if promo_data:
-            promo_df = pd.DataFrame(promo_data)
+    with l_col2:
+        promo_data = svc.get_promotion_effectiveness(selected_store_id, selected_dept_id)
+        df_promo = pd.DataFrame(promo_data)
+        if not df_promo.empty:
             fig_promo = px.bar(
-                promo_df,
+                df_promo,
                 x="period",
                 y="avg_weekly_sales",
                 color="period",
@@ -438,32 +521,54 @@ with tab_dash:
 # TAB 2: DEMAND FORECAST
 # ==========================================================
 with tab_fc:
-    st.markdown("#### Production Demand Forecasting Engine")
-    st.caption("Generate recursive multi-step forecasts with the trained LightGBM Regressor.")
+    st.markdown("#### Demand Forecast")
+    st.caption("Forecast future weekly sales for a selected store and department.")
 
+    # Obvious Labeled Inputs
     fc_col1, fc_col2, fc_col3, fc_col4 = st.columns([1.5, 1.5, 1.2, 1.2])
     
     with fc_col1:
-        fc_store = st.number_input("Store ID", min_value=1, max_value=45, value=20, step=1)
+        # Store Selectbox
+        store_list = [f"Store {i}" for i in range(1, 46)]
+        selected_fc_store_str = st.selectbox("Store", store_list, index=19)  # Default Store 20
+        fc_store_id = int(selected_fc_store_str.split("Store ")[1])
+
     with fc_col2:
-        # Fetch valid depts for this store
-        valid_depts = load_cached_departments(int(fc_store))
-        default_dept = 3 if 3 in valid_depts else (valid_depts[0] if valid_depts else 1)
-        fc_dept = st.selectbox("Department ID", valid_depts, index=valid_depts.index(default_dept) if default_dept in valid_depts else 0)
+        # Department Selectbox populated from actual valid departments for selected store
+        valid_depts = load_cached_departments(fc_store_id)
+        dept_str_list = [f"Department {d}" for d in valid_depts]
+        
+        # Default to Department 5 or Department 3 if available
+        default_d_idx = 0
+        if "Department 5" in dept_str_list:
+            default_d_idx = dept_str_list.index("Department 5")
+        elif "Department 3" in dept_str_list:
+            default_d_idx = dept_str_list.index("Department 3")
+            
+        selected_fc_dept_str = st.selectbox("Department", dept_str_list, index=default_d_idx)
+        fc_dept_id = int(selected_fc_dept_str.split("Department ")[1])
+
     with fc_col3:
-        fc_horizon = st.selectbox("Horizon (Weeks)", [1, 2, 4, 6, 8, 12], index=2)
+        # Forecast Horizon Selectbox
+        horizon_options = ["1 Week", "2 Weeks", "4 Weeks", "6 Weeks", "8 Weeks", "12 Weeks"]
+        selected_horizon_str = st.selectbox("Forecast Horizon", horizon_options, index=4)  # Default 8 Weeks
+        fc_horizon = int(selected_horizon_str.split(" ")[0])
+
     with fc_col4:
         st.write("")
         st.write("")
         run_fc_btn = st.button("Generate Forecast", use_container_width=True)
 
+    # Forecast execution
+    fc_result = None
     if run_fc_btn or "last_forecast" not in st.session_state:
         predictor = get_forecaster_predictor()
         try:
-            fc_result = predictor.predict(store_id=int(fc_store), dept_id=int(fc_dept), horizon_weeks=int(fc_horizon))
-            st.session_state["last_forecast"] = fc_result
+            with st.spinner("Generating demand forecast with LightGBM..."):
+                fc_result = predictor.predict(store_id=fc_store_id, dept_id=fc_dept_id, horizon_weeks=fc_horizon)
+                st.session_state["last_forecast"] = fc_result
         except Exception as e:
-            st.error(f"Forecasting Error: {str(e)}")
+            st.error(f"The forecasting model could not be loaded. Please check the project environment: {str(e)}")
             fc_result = None
     else:
         fc_result = st.session_state.get("last_forecast")
@@ -474,22 +579,25 @@ with tab_fc:
         proj_total = sum(p["weekly_sales"] for p in preds)
         proj_avg = proj_total / len(preds)
 
+        st.markdown("---")
+        st.markdown(f"##### Forecast Summary &nbsp; · &nbsp; `Store: {fc_result['store_id']}` &nbsp; · &nbsp; `Department: {fc_result['dept_id']}` &nbsp; · &nbsp; `Forecast Period: Next {fc_result['horizon_weeks']} Weeks` &nbsp; · &nbsp; `Model: LightGBM`")
+
         # Forecast Metrics Cards
         fm1, fm2, fm3, fm4 = st.columns(4)
         with fm1:
             st.markdown(f"""
             <div class="metric-card">
-                <div class="metric-label">Target Entity</div>
-                <div class="metric-val">Store {fc_result['store_id']} · Dept {fc_result['dept_id']}</div>
-                <div class="metric-sub">Horizon: {fc_result['horizon_weeks']} Weeks</div>
+                <div class="metric-label">Projected Total Sales</div>
+                <div class="metric-val">${proj_total:,.2f}</div>
+                <div class="metric-sub">{fc_result['horizon_weeks']}-Week Forward Horizon</div>
             </div>
             """, unsafe_allow_html=True)
         with fm2:
             st.markdown(f"""
             <div class="metric-card">
-                <div class="metric-label">Projected Total Sales</div>
-                <div class="metric-val">${proj_total:,.2f}</div>
-                <div class="metric-sub">Avg: ${proj_avg:,.2f}/week</div>
+                <div class="metric-label">Average Weekly Forecast</div>
+                <div class="metric-val">${proj_avg:,.2f}</div>
+                <div class="metric-sub">Forward Expected Mean</div>
             </div>
             """, unsafe_allow_html=True)
         with fm3:
@@ -497,21 +605,22 @@ with tab_fc:
             <div class="metric-card">
                 <div class="metric-label">Historical Mean Sales</div>
                 <div class="metric-val">${hist_sum['historical_mean_sales']:,.2f}</div>
-                <div class="metric-sub">Based on {hist_sum['total_historical_weeks']} active weeks</div>
+                <div class="metric-sub">Across {hist_sum['total_historical_weeks']} Active Weeks</div>
             </div>
             """, unsafe_allow_html=True)
         with fm4:
             st.markdown(f"""
             <div class="metric-card">
-                <div class="metric-label">Production Model</div>
-                <div class="metric-val">{fc_result['model_type']}</div>
-                <div class="metric-sub">Artifact: retailiq_forecaster.pkl (v{fc_result['model_version']})</div>
+                <div class="metric-label">Last Known Weekly Sales</div>
+                <div class="metric-val">${hist_sum['last_known_sales']:,.2f}</div>
+                <div class="metric-sub">Baseline for Step 1</div>
             </div>
             """, unsafe_allow_html=True)
 
         st.markdown("<div style='height: 16px;'></div>", unsafe_allow_html=True)
 
         # Build Historical + Forecast Plot
+        st.markdown("##### Historical Sales & Forecast")
         svc = get_analytics_service()
         with svc.get_connection() as conn:
             hist_df = pd.read_sql(f"""
@@ -550,7 +659,7 @@ with tab_fc:
             x=conn_x,
             y=conn_y,
             mode="lines+markers",
-            name="LightGBM Multi-Step Forecast",
+            name="LightGBM Demand Forecast",
             line=dict(color="#2F5D50", width=3, dash="dot"),
             marker=dict(size=7, color="#2F5D50")
         ))
@@ -559,17 +668,26 @@ with tab_fc:
         st.plotly_chart(fig_fc, use_container_width=True)
 
         # Forecast Breakdown Table
-        st.markdown("##### Week-by-Week Forecast Schedule")
+        st.markdown("##### Forecast Table")
         pred_table_data = []
         for p in preds:
             pred_table_data.append({
-                "Forecast Step": f"Step {p['step']}",
-                "Target Week Date": p["week"],
-                "Projected Weekly Sales ($)": f"${p['weekly_sales']:,.2f}",
-                "Holiday Flag": "Holiday Week" if p["is_holiday"] else "Normal Week",
-                "Model Assumption": p.get("assumptions", ["Macro continuity"])[0] if p.get("assumptions") else "Normal"
+                "Week": p["week"],
+                "Forecasted Sales ($)": f"${p['weekly_sales']:,.2f}",
+                "Holiday Week": "Yes (Holiday)" if p["is_holiday"] else "No (Normal Week)",
+                "Forecast Step": f"Step {p['step']}"
             })
         st.dataframe(pd.DataFrame(pred_table_data), use_container_width=True, hide_index=True)
+
+        # Technical Model Information Expander
+        with st.expander("ℹ️ How this forecast works & model details", expanded=False):
+            st.markdown(f"""
+            - **Forecasting Model:** LightGBM Gradient Boosted Decision Trees Regressor (400 trees, learning rate 0.04, num_leaves=63).
+            - **Artifact:** `models/trained/retailiq_forecaster.pkl`
+            - **Feature Engineering Pipeline:** 44 total features including 7 autoregressive lags (1, 2, 4, 8, 13, 26, 52 weeks), 14 rolling statistics (4, 8, 13-week moving means, min, max, std), calendar indicators, and macroeconomic indices.
+            - **Recursive Lag Rolling:** Predictions from Step $t$ feed forward as lagged predictors for Step $t+1$.
+            - **Academic Test Benchmarks:** Test MAE = $1,385.12 | Test RMSE = $3,520.44 | WAPE = 8.67%.
+            """)
 
 
 # ==========================================================
@@ -577,7 +695,7 @@ with tab_fc:
 # ==========================================================
 with tab_agent:
     st.markdown("#### RetailIQ Business Assistant")
-    st.caption("Ask about sales, stores, departments, forecasts, or company policies.")
+    st.caption("Ask me about historical sales, stores, departments, forecasts, or internal policies.")
 
     # Initialize chat history & conversational session state
     if "messages" not in st.session_state:
@@ -592,8 +710,8 @@ with tab_agent:
         st.session_state["agent_context"] = {}
 
     # Example Prompt Quick Buttons
-    st.markdown("<div style='font-size: 0.85rem; font-weight: 500; color: #66645F; margin-bottom: 6px;'>Example questions:</div>", unsafe_allow_html=True)
-    eq1, eq2, eq3, eq4, eq5 = st.columns(5)
+    st.markdown("<div style='font-size: 0.85rem; font-weight: 600; color: #1C1C1C; margin-bottom: 6px;'>Example questions:</div>", unsafe_allow_html=True)
+    eq1, eq2, eq3, eq4, eq5, eq6 = st.columns(6)
     quick_prompt = None
     with eq1:
         if st.button("🏆 Top 5 Stores", use_container_width=True):
@@ -602,16 +720,19 @@ with tab_agent:
         if st.button("⚖️ Compare Stores", use_container_width=True):
             quick_prompt = "Compare Store 10 and Store 20"
     with eq3:
-        if st.button("🎉 Holiday Performance", use_container_width=True):
-            quick_prompt = "What happened during holidays?"
+        if st.button("📊 Sales Overview", use_container_width=True):
+            quick_prompt = "give me sales update"
     with eq4:
-        if st.button("🔮 4-Week Forecast", use_container_width=True):
-            quick_prompt = "Forecast Store 20 Department 3 for 4 weeks"
+        if st.button("🎉 Holiday Impact", use_container_width=True):
+            quick_prompt = "What happened during holidays?"
     with eq5:
+        if st.button("🔮 Forecast Sales", use_container_width=True):
+            quick_prompt = "Forecast Store 20 Department 3 for 4 weeks"
+    with eq6:
         if st.button("📜 Return Policy", use_container_width=True):
             quick_prompt = "What is our customer return policy?"
 
-    st.markdown("<div style='height: 8px;'></div>", unsafe_allow_html=True)
+    st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
 
     # Display Chat History
     for msg in st.session_state["messages"]:
@@ -629,7 +750,7 @@ with tab_agent:
                         st.divider()
 
     # Chat Input Handling
-    user_input = st.chat_input("Ask a question about sales, rankings, forecasting, or policies...")
+    user_input = st.chat_input("Ask RetailIQ — e.g. 'Compare Store 10 and Store 20'")
     active_query = quick_prompt or user_input
 
     if active_query:
@@ -668,4 +789,3 @@ with tab_agent:
             "content": answer,
             "trace": trace
         })
-

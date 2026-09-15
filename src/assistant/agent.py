@@ -532,9 +532,9 @@ class RetailIQAssistant:
         # ------------------------------------------------------
         policy_keywords = [
             "policy", "sop", "sops", "return", "returns", "refund", "receipt", "markdown rule",
-            "markdown rules", "clearance rule", "supplier term", "supplier terms", "payment term",
-            "payment terms", "reorder inventory", "reorder rule", "safety stock rule",
-            "discrepanc", "variance reconciliation", "shrinkage allowance"
+            "markdown rules", "clearance rule", "supplier", "suppliers", "payment term",
+            "payment terms", "reorder", "reordered", "safety stock", "inventory cover",
+            "stock cover", "discrepanc", "variance", "shrinkage", "lead time"
         ]
         is_policy = any(k in q_lower for k in policy_keywords)
         # Avoid stealing promo analysis queries

@@ -339,6 +339,23 @@ class AnalyticsService:
             df = pd.read_sql(query, conn, params=params_f)
         return df.to_dict(orient="records")
 
+    def get_sales_by_store_type(self) -> List[Dict[str, Any]]:
+        """Returns sales breakdown by Store Type (A, B, C)."""
+        query = """
+        SELECT
+            s.store_type,
+            COUNT(DISTINCT s.store_id) AS store_count,
+            ROUND(SUM(f.weekly_sales), 2) AS total_sales,
+            ROUND(AVG(f.weekly_sales), 2) AS avg_weekly_sales
+        FROM fact_sales f
+        JOIN dim_store s ON f.store_id = s.store_id
+        GROUP BY s.store_type
+        ORDER BY total_sales DESC;
+        """
+        with self.get_connection() as conn:
+            df = pd.read_sql(query, conn)
+        return df.to_dict(orient="records")
+
     def execute_safe_query(self, sql: str, max_rows: int = 25) -> Dict[str, Any]:
         """Safely executes custom SQL query with validation and limits."""
         is_valid, validated_sql = SQLSecurityValidator.validate_query(sql)
